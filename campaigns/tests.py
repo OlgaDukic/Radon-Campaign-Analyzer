@@ -691,6 +691,16 @@ class ExcelExportTests(TestCase):
         self.assertEqual(workbook["Gaps"]["C2"].value, 120)
         self.assertEqual(workbook["Ingestion Diagnostics"]["A2"].value, "export.csv")
         self.assertEqual(workbook["Measurements"]["B2"].value, 100.0)
+        for sheet_name in workbook.sheetnames:
+            self.assertEqual(workbook[sheet_name].freeze_panes, "A2")
+            self.assertTrue(workbook[sheet_name].auto_filter.ref)
+            self.assertTrue(workbook[sheet_name]["A1"].font.bold)
+            self.assertEqual(workbook[sheet_name]["A1"].alignment.vertical, "center")
+        self.assertEqual(workbook["Measurements"]["A2"].number_format, "yyyy-mm-dd hh:mm")
+        self.assertEqual(workbook["Measurements"]["B2"].number_format, "0.0")
+        self.assertEqual(workbook["Measurements"]["C2"].number_format, "0.0")
+        self.assertEqual(workbook["Prediction Metrics"]["D2"].number_format, "0.000")
+        self.assertTrue(workbook["Ingestion Diagnostics"]["H2"].alignment.wrap_text)
         self.assertEqual(report, campaign.analysis_reports.first())
 
     def test_excel_report_export_handles_missing_optional_fields(self):
