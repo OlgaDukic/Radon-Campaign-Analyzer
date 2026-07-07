@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 
 from .models import AnalysisReport, Campaign, Measurement, UploadedFile
 from .services.analysis import run_campaign_analysis
@@ -189,6 +189,20 @@ class CampaignViewTests(TestCase):
         self.assertContains(response, "Dashboard Summary")
         self.assertContains(response, "N/A")
         self.assertContains(response, "Radon Time Series")
+
+    def test_campaign_detail_links_to_excel_report(self):
+        campaign = Campaign.objects.create(name="Excel Link Campaign")
+        AnalysisReport.objects.create(
+            campaign=campaign,
+            status=AnalysisReport.Status.COMPLETE,
+            summary="Report ready.",
+            summary_json={},
+        )
+
+        response = self.client.get(reverse("campaigns:campaign_detail", args=[campaign.pk]))
+
+        self.assertContains(response, "Download Excel Report")
+        self.assertContains(response, reverse("campaigns:export_excel_report", args=[campaign.pk]))
 
 
 class AnalysisPipelineTests(TestCase):
@@ -575,6 +589,127 @@ class PredictionModelTests(TestCase):
         self.assertContains(response, "Model Performance")
         self.assertContains(response, "naive_baseline")
         self.assertContains(response, "ridge")
+
+
+class ExcelExportTests(TestCase):
+    def test_excel_report_export_returns_workbook(self):
+        campaign = Campaign.objects.create(name="Export Campaign", location="Lab A")
+        UploadedFile.objects.create(
+            campaign=campaign,
+            original_name="export.csv",
+            file=SimpleUploadedFile("export.csv", b"Time,Radon\n2026-01-01 00:00,100\n"),
+        )
+        report = AnalysisReport.objects.create(
+            campaign=campaign,
+            status=AnalysisReport.Status.COMPLETE,
+            summary="Research prototype analysis complete.",
+            summary_json={
+                "measurement_count": 2,
+                "segment_count": 1,
+                "gap_count": 1,
+                "regime_counts": {"stable_low": 1, "rising": 1},
+                "prediction_metrics": {
+                    "1h": {
+                        "naive_baseline": {"samples": 1, "mae": 10.0, "rmse": 10.0},
+                        "ridge": {"samples": 1, "mae": 5.0, "rmse": 6.0},
+                    }
+                },
+                "gaps": [{"from": "2026-01-01T00:00:00+00:00", "to": "2026-01-01T02:00:00+00:00", "minutes": 120}],
+                "segments": [
+                    {
+                        "segment_id": 1,
+                        "start": "2026-01-01T00:00:00+00:00",
+                        "end": "2026-01-01T01:00:00+00:00",
+                        "segment_label": "low_dynamic",
+                        "dominant_regime": "rising",
+                        "interpretation_text": "Low but dynamic.",
+                        "statistics": {"radon_bq_m3": {"mean": 105.0, "max": 110.0}},
+                    }
+                ],
+                "ingestion_debug": [
+                    {
+                        "filename": "export.csv",
+                        "parsed_measurement_rows": 2,
+                        "skipped_rows": 0,
+                        "skipped_reason": "",
+                        "detected_sheets": ["CSV"],
+                        "detected_header_row": 1,
+                        "mapped_columns": {"timestamp": "Time", "radon": "Radon"},
+                    }
+                ],
+            },
+        )
+        start = timezone.datetime(2026, 1, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        Measurement.objects.create(
+            campaign=campaign,
+            measured_at=start,
+            radon_bq_m3=Decimal("100"),
+            temperature_c=Decimal("20.1"),
+            humidity_percent=Decimal("45.0"),
+            pressure_hpa=Decimal("1001.0"),
+            segment_id=1,
+            regime="stable_low",
+        )
+        Measurement.objects.create(
+            campaign=campaign,
+            measured_at=start + timedelta(hours=1),
+            radon_bq_m3=Decimal("110"),
+            segment_id=1,
+            regime="rising",
+        )
+
+        response = self.client.get(reverse("campaigns:export_excel_report", args=[campaign.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["Content-Type"],
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertIn(f"radon_campaign_{campaign.pk}_report.xlsx", response["Content-Disposition"])
+
+        workbook = load_workbook(BytesIO(response.content))
+        self.assertEqual(
+            workbook.sheetnames,
+            [
+                "Summary",
+                "Segments",
+                "Regime Counts",
+                "Prediction Metrics",
+                "Gaps",
+                "Ingestion Diagnostics",
+                "Measurements",
+            ],
+        )
+        self.assertEqual(workbook["Summary"]["B2"].value, "Export Campaign")
+        self.assertEqual(workbook["Summary"]["B3"].value, "Lab A")
+        self.assertEqual(workbook["Summary"]["B6"].value, 2)
+        self.assertEqual(workbook["Summary"]["B7"].value, 1)
+        self.assertEqual(workbook["Segments"]["A2"].value, 1)
+        self.assertEqual(workbook["Segments"]["G2"].value, "low_dynamic")
+        self.assertEqual(workbook["Regime Counts"]["A2"].value, "stable_low")
+        self.assertEqual(workbook["Prediction Metrics"]["A2"].value, "1h")
+        self.assertEqual(workbook["Gaps"]["C2"].value, 120)
+        self.assertEqual(workbook["Ingestion Diagnostics"]["A2"].value, "export.csv")
+        self.assertEqual(workbook["Measurements"]["B2"].value, 100.0)
+        self.assertEqual(report, campaign.analysis_reports.first())
+
+    def test_excel_report_export_handles_missing_optional_fields(self):
+        campaign = Campaign.objects.create(name="Sparse Export")
+        AnalysisReport.objects.create(
+            campaign=campaign,
+            status=AnalysisReport.Status.COMPLETE,
+            summary="Sparse report.",
+            summary_json={"segments": [{}], "prediction_metrics": {"6h": {"ridge": {"samples": 0}}}},
+        )
+
+        response = self.client.get(reverse("campaigns:export_excel_report", args=[campaign.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        workbook = load_workbook(BytesIO(response.content))
+        self.assertEqual(workbook["Summary"]["B2"].value, "Sparse Export")
+        self.assertEqual(workbook["Summary"]["B3"].value, "N/A")
+        self.assertEqual(workbook["Segments"]["A2"].value, "N/A")
+        self.assertEqual(workbook["Prediction Metrics"]["A2"].value, "6h")
 
 
 def _segment_rows(start, segment_id, radon_values, regimes):

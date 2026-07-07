@@ -1,11 +1,13 @@
 from django.contrib import messages
 from django.db.models import Avg, Max, Min
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import CampaignForm, UploadedFileForm
 from .models import Campaign, Measurement
 from .services.analysis import run_campaign_analysis
+from .services.excel_export import build_campaign_report_workbook
 
 
 def campaign_list(request):
@@ -36,6 +38,7 @@ def campaign_detail(request, pk):
             "campaign": campaign,
             "upload_form": upload_form,
             "latest_report": latest_report,
+            "export_excel_url": f"/campaigns/{campaign.pk}/export.xlsx",
             "dashboard": _build_dashboard(campaign, latest_report),
         },
     )
@@ -69,6 +72,19 @@ def run_analysis(request, pk):
     return redirect("campaigns:campaign_detail", pk=campaign.pk)
 
 
+def export_excel_report(request, pk):
+    campaign = get_object_or_404(Campaign, pk=pk)
+    report = campaign.analysis_reports.first()
+    workbook = build_campaign_report_workbook(campaign, report)
+    filename = f"radon_campaign_{campaign.pk}_report.xlsx"
+    response = HttpResponse(
+        workbook.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
 def _build_dashboard(campaign, latest_report):
     summary = latest_report.summary_json if latest_report and latest_report.summary_json else {}
     measurements = campaign.measurements.order_by("measured_at")
@@ -90,13 +106,13 @@ def _build_dashboard(campaign, latest_report):
 
     return {
         "cards": [
-            {"label": "Uploaded files", "value": campaign.uploaded_files.count()},
-            {"label": "Imported measurements", "value": _display(imported_count)},
-            {"label": "Campaign time range", "value": _time_range(measurement_stats["first_at"], measurement_stats["last_at"])},
-            {"label": "Segments", "value": _display(summary.get("segment_count", len(segments) if segments else None))},
-            {"label": "Gaps > 60 min", "value": _display(summary.get("gap_count", len(gaps) if gaps else None))},
-            {"label": "Mean radon", "value": _radon(measurement_stats["mean_radon"])},
-            {"label": "Max radon", "value": _radon(measurement_stats["max_radon"])},
+            {"label": "Uploaded files", "value": campaign.uploaded_files.count(), "marker": "📁"},
+            {"label": "Imported measurements", "value": _display(imported_count), "marker": "▦"},
+            {"label": "Campaign time range", "value": _time_range(measurement_stats["first_at"], measurement_stats["last_at"]), "marker": "◷"},
+            {"label": "Segments", "value": _display(summary.get("segment_count", len(segments) if segments else None)), "marker": "▤"},
+            {"label": "Gaps > 60 min", "value": _display(summary.get("gap_count", len(gaps) if gaps else None)), "marker": "⚠"},
+            {"label": "Mean radon", "value": _radon(measurement_stats["mean_radon"]), "marker": "μ"},
+            {"label": "Max radon", "value": _radon(measurement_stats["max_radon"]), "marker": "▲"},
         ],
         "data_quality": {
             "uploaded_file_count": campaign.uploaded_files.count(),
@@ -105,7 +121,7 @@ def _build_dashboard(campaign, latest_report):
             "parsed_file_count": sum(1 for file_debug in ingestion_debug if file_debug.get("parsed_measurement_rows", 0) > 0),
             "skipped_file_count": sum(1 for file_debug in ingestion_debug if file_debug.get("skipped_reason")),
         },
-        "segments": segments,
+        "segments": _dashboard_segments(segments),
         "regime_counts": regime_counts,
         "regime_bars": _bars(regime_counts),
         "prediction_metrics": prediction_metrics,
@@ -124,7 +140,7 @@ def _display(value):
 def _radon(value):
     if value is None:
         return "N/A"
-    return f"{float(value):.1f} Bq/m3"
+    return f"{float(value):.1f} Bq/m³"
 
 
 def _time_range(start, end):
@@ -196,3 +212,20 @@ def _number_or_na(value):
     if value is None:
         return "N/A"
     return round(float(value), 1)
+
+
+def _dashboard_segments(segments):
+    prepared = []
+    for segment in segments:
+        row = segment.copy()
+        row["percent_above_100_display"] = _percent_or_na(segment.get("percent_above_100"))
+        row["percent_above_200_display"] = _percent_or_na(segment.get("percent_above_200"))
+        row["dynamic_percent_display"] = _percent_or_na(segment.get("dynamic_percent"))
+        prepared.append(row)
+    return prepared
+
+
+def _percent_or_na(value):
+    if value is None or value == "":
+        return "N/A"
+    return f"{value}%"
