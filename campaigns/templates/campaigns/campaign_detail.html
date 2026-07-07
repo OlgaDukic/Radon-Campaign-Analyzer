@@ -1,0 +1,409 @@
+{% extends "campaigns/base.html" %}
+
+{% block content %}
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+    .muted { color: #555; }
+    .actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+        margin: 18px 0 24px;
+    }
+    .summary-card {
+        border: 1px solid #d6dbe1;
+        border-radius: 6px;
+        padding: 12px;
+        background: #f8fafc;
+    }
+    .summary-card strong {
+        display: block;
+        font-size: 1.25rem;
+        margin-top: 6px;
+    }
+    .dashboard-section {
+        margin: 26px 0;
+    }
+    .table-wrap {
+        overflow-x: auto;
+    }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+    }
+    th, td {
+        border: 1px solid #d8dde3;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+    }
+    th {
+        background: #eef2f6;
+    }
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 18px;
+    }
+    .chart-panel {
+        border: 1px solid #d6dbe1;
+        border-radius: 6px;
+        padding: 12px;
+        background: #fff;
+    }
+    .line-chart {
+        width: 100%;
+        max-width: 760px;
+        height: auto;
+        border: 1px solid #d8dde3;
+        background: #fbfcfd;
+    }
+    .bar-row {
+        display: grid;
+        grid-template-columns: minmax(90px, 150px) 1fr auto;
+        gap: 8px;
+        align-items: center;
+        margin: 8px 0;
+    }
+    .bar-track {
+        background: #edf1f5;
+        height: 14px;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .bar-fill {
+        background: #2d6cdf;
+        height: 100%;
+    }
+    .bar-fill.secondary {
+        background: #6b8f3a;
+    }
+    .compact-details {
+        margin-top: 18px;
+    }
+    pre {
+        white-space: pre-wrap;
+        background: #f6f8fa;
+        border: 1px solid #d8dde3;
+        padding: 12px;
+        overflow-x: auto;
+    }
+</style>
+
+<div class="dashboard-header">
+    <div>
+        <h2>{{ campaign.name }}</h2>
+        {% if campaign.location %}<p><strong>Location:</strong> {{ campaign.location }}</p>{% endif %}
+        {% if campaign.description %}<p>{{ campaign.description }}</p>{% endif %}
+        {% if campaign.start_date or campaign.end_date %}
+            <p><strong>Planned dates:</strong> {{ campaign.start_date|default:"unknown" }} to {{ campaign.end_date|default:"unknown" }}</p>
+        {% endif %}
+        {% if latest_report %}
+            <p class="muted">Latest report: {{ latest_report.get_status_display }} at {{ latest_report.created_at }}</p>
+        {% else %}
+            <p class="muted">No analysis report has been generated yet.</p>
+        {% endif %}
+    </div>
+    <div class="actions">
+        <form method="post" action="{% url 'campaigns:run_analysis' campaign.pk %}">
+            {% csrf_token %}
+            <button type="submit">Run analysis</button>
+        </form>
+    </div>
+</div>
+
+<section class="dashboard-section">
+    <h3>Dashboard Summary</h3>
+    <div class="summary-grid">
+        {% for card in dashboard.cards %}
+            <div class="summary-card">
+                <span>{{ card.label }}</span>
+                <strong>{{ card.value }}</strong>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="dashboard-section">
+    <h3>Upload Monitoring File</h3>
+    <form method="post" action="{% url 'campaigns:upload_file' campaign.pk %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ upload_form.as_p }}
+        <button type="submit">Upload file</button>
+    </form>
+</section>
+
+<section class="dashboard-section">
+    <h3>Uploaded Files</h3>
+    {% if campaign.uploaded_files.all %}
+        <ul>
+            {% for uploaded_file in campaign.uploaded_files.all %}
+                <li>{{ uploaded_file.original_name }} uploaded {{ uploaded_file.uploaded_at }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No files uploaded yet.</p>
+    {% endif %}
+</section>
+
+{% if latest_report %}
+    <section class="dashboard-section">
+        <h3>Data Quality Summary</h3>
+        <div class="table-wrap">
+            <table>
+                <tbody>
+                    <tr><th>Uploaded files</th><td>{{ dashboard.data_quality.uploaded_file_count }}</td></tr>
+                    <tr><th>Files with parsed measurements</th><td>{{ dashboard.data_quality.parsed_file_count }}</td></tr>
+                    <tr><th>Files with parser warnings</th><td>{{ dashboard.data_quality.skipped_file_count }}</td></tr>
+                    <tr><th>Imported measurements</th><td>{{ dashboard.data_quality.imported_measurement_count }}</td></tr>
+                    <tr><th>Detected gaps over 60 minutes</th><td>{{ dashboard.data_quality.gap_count }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <h3>Charts</h3>
+        <div class="chart-grid">
+            <div class="chart-panel">
+                <h4>Radon Time Series</h4>
+                {% if dashboard.time_series.has_data %}
+                    <svg class="line-chart" viewBox="0 0 700 220" role="img" aria-label="Radon time series line chart">
+                        <line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line>
+                        <line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line>
+                        <polyline points="{{ dashboard.time_series.points }}" fill="none" stroke="#2d6cdf" stroke-width="3"></polyline>
+                    </svg>
+                    <p class="muted">Range: {{ dashboard.time_series.min }} to {{ dashboard.time_series.max }} Bq/m3</p>
+                {% else %}
+                    <p>N/A</p>
+                {% endif %}
+            </div>
+            <div class="chart-panel">
+                <h4>Segment Mean/Max Radon</h4>
+                {% if dashboard.segment_bars %}
+                    {% for segment in dashboard.segment_bars %}
+                        <div class="bar-row">
+                            <span>Segment {{ segment.segment_id }}</span>
+                            <div>
+                                <div class="bar-track"><div class="bar-fill secondary" style="width: {{ segment.mean_width }}%"></div></div>
+                                <div class="bar-track"><div class="bar-fill" style="width: {{ segment.max_width }}%"></div></div>
+                            </div>
+                            <span>mean {{ segment.mean }}, max {{ segment.max }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>N/A</p>
+                {% endif %}
+            </div>
+            <div class="chart-panel">
+                <h4>Regime Counts</h4>
+                {% if dashboard.regime_bars %}
+                    {% for bar in dashboard.regime_bars %}
+                        <div class="bar-row">
+                            <span>{{ bar.label }}</span>
+                            <div class="bar-track"><div class="bar-fill" style="width: {{ bar.width }}%"></div></div>
+                            <span>{{ bar.value }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>N/A</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <h3>Segment Interpretation</h3>
+        {% if dashboard.segments %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Segment</th>
+                            <th>Label</th>
+                            <th>Measurements</th>
+                            <th>Mean radon</th>
+                            <th>Max radon</th>
+                            <th>Above 100</th>
+                            <th>Above 200</th>
+                            <th>Dynamic</th>
+                            <th>Interpretation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for segment in dashboard.segments %}
+                            <tr>
+                                <td>{{ segment.segment_id|default:"N/A" }}</td>
+                                <td>{{ segment.segment_label|default:"N/A" }}</td>
+                                <td>{{ segment.measurement_count|default:"N/A" }}</td>
+                                <td>{{ segment.statistics.radon_bq_m3.mean|default:"N/A" }}</td>
+                                <td>{{ segment.statistics.radon_bq_m3.max|default:"N/A" }}</td>
+                                <td>{{ segment.percent_above_100|default:"N/A" }}%</td>
+                                <td>{{ segment.percent_above_200|default:"N/A" }}%</td>
+                                <td>{{ segment.dynamic_percent|default:"N/A" }}%</td>
+                                <td>{{ segment.interpretation_text|default:"N/A" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>N/A</p>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-section">
+        <h3>Regime Counts</h3>
+        {% if dashboard.regime_counts %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Regime</th><th>Measurements</th></tr></thead>
+                    <tbody>
+                        {% for regime, count in dashboard.regime_counts.items %}
+                            <tr><td>{{ regime }}</td><td>{{ count }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>N/A</p>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-section">
+        <h3>Prediction Metrics</h3>
+        <p class="muted">Prediction models are compared against the naive baseline where future radon is assumed to equal current radon.</p>
+        {% if dashboard.prediction_metrics %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Horizon</th>
+                            <th>Model</th>
+                            <th>Samples</th>
+                            <th>MAE</th>
+                            <th>RMSE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for horizon, model_results in dashboard.prediction_metrics.items %}
+                            {% for model_name, metrics in model_results.items %}
+                                <tr>
+                                    <td>{{ horizon }}</td>
+                                    <td>{{ model_name }}</td>
+                                    <td>{{ metrics.samples|default:"N/A" }}</td>
+                                    <td>{{ metrics.mae|default:"N/A" }}</td>
+                                    <td>{{ metrics.rmse|default:"N/A" }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>N/A</p>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-section">
+        <h3>Detected Gaps</h3>
+        {% if dashboard.gaps %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>From</th><th>To</th><th>Minutes</th></tr></thead>
+                    <tbody>
+                        {% for gap in dashboard.gaps %}
+                            <tr>
+                                <td>{{ gap.from|default:"N/A" }}</td>
+                                <td>{{ gap.to|default:"N/A" }}</td>
+                                <td>{{ gap.minutes|default:"N/A" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>N/A</p>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-section">
+        <h3>Ingestion Diagnostics</h3>
+        <p class="muted">Diagnostics are retained for reproducibility and troubleshooting uploaded files.</p>
+        {% if dashboard.ingestion_debug %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Sheets</th>
+                            <th>Rows</th>
+                            <th>Header row</th>
+                            <th>Detected columns</th>
+                            <th>Mapped columns</th>
+                            <th>Parsed rows</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file_debug in dashboard.ingestion_debug %}
+                            <tr>
+                                <td>{{ file_debug.filename|default:"N/A" }}</td>
+                                <td>{{ file_debug.detected_sheets|join:", "|default:"N/A" }}</td>
+                                <td>{{ file_debug.raw_rows_read|default:"N/A" }}</td>
+                                <td>{{ file_debug.detected_header_row|default:"N/A" }}</td>
+                                <td>{{ file_debug.detected_columns|join:", "|default:"N/A" }}</td>
+                                <td>
+                                    timestamp: {{ file_debug.mapped_columns.timestamp|default:"N/A" }};
+                                    radon: {{ file_debug.mapped_columns.radon|default:"N/A" }};
+                                    temperature: {{ file_debug.mapped_columns.temperature|default:"N/A" }};
+                                    humidity: {{ file_debug.mapped_columns.humidity|default:"N/A" }};
+                                    pressure: {{ file_debug.mapped_columns.pressure|default:"N/A" }}
+                                </td>
+                                <td>{{ file_debug.parsed_measurement_rows|default:"N/A" }}</td>
+                                <td>{{ file_debug.skipped_reason|default:"" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p>N/A</p>
+        {% endif %}
+    </section>
+
+    <details class="compact-details">
+        <summary>Raw summary JSON</summary>
+        <pre>{{ latest_report.summary_json }}</pre>
+    </details>
+    {% if latest_report.html_report %}
+        <details class="compact-details">
+            <summary>Generated HTML Report</summary>
+            <div>{{ latest_report.html_report|safe }}</div>
+        </details>
+    {% endif %}
+{% else %}
+    <section class="dashboard-section">
+        <h3>Research Dashboard</h3>
+        <p>Run analysis after uploading campaign files to populate the dashboard.</p>
+    </section>
+{% endif %}
+
+<section class="dashboard-section">
+    <h3>Measurements</h3>
+    <p>{{ campaign.measurements.count }} measurement records.</p>
+</section>
+{% endblock %}

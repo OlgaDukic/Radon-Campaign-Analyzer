@@ -1,0 +1,11 @@
+{% extends "campaigns/base.html" %}
+
+{% block content %}
+<h2>Create Campaign</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Create campaign</button>
+</form>
+{% endblock %}

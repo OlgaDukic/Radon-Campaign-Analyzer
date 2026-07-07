@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Radon Campaign Analyzer</title>
+</head>
+<body>
+    <header>
+        <h1><a href="{% url 'campaigns:campaign_list' %}">Radon Campaign Analyzer</a></h1>
+        <nav>
+            <a href="{% url 'campaigns:campaign_create' %}">Create campaign</a>
+        </nav>
+        <hr>
+    </header>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
