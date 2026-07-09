@@ -1,13 +1,37 @@
+import logging
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib import messages
 from django.db.models import Avg, Max, Min
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from .forms import CampaignForm, UploadedFileForm
+from .forms import CampaignForm, Paper1AnalysisForm, UploadedFileForm
 from .models import Campaign, Measurement
-from .services.analysis import run_campaign_analysis
+from .services.analysis import run_campaign_analysis as run_basic_analysis
 from .services.excel_export import build_campaign_report_workbook
+from .services.paper1_analysis_runner import run_paper1_analysis
+from .services.prediction_insights import build_prediction_insights, prediction_regime_badge
+
+logger = logging.getLogger(__name__)
+
+PAPER_OUTPUT_FILES = {
+    "radon_campaign_{campaign_id}_report.xlsx": "Download latest Excel report",
+    "paper1_validation_report.md": "Open validation report",
+    "row_reconciliation_summary.csv": "Download row reconciliation summary",
+    "dst_diagnostics_compact_summary.csv": "Download compact DST summary",
+    "sampling_gaps_compact_summary.csv": "Download compact sampling gap summary",
+    "prediction_skill_by_regime.csv": "Download prediction skill by regime CSV",
+    "reproducibility_config.csv": "Download reproducibility config",
+    "source_file_inventory.csv": "Source file inventory CSV",
+    "canonical_dataset_summary.csv": "Canonical dataset summary CSV",
+    "quality_flag_counts.csv": "Quality flag counts CSV",
+    "regime_counts.csv": "Regime counts CSV",
+    "prediction_readiness.csv": "Prediction readiness CSV",
+    "sirem_readiness.csv": "SIREM readiness CSV",
+}
 
 
 def campaign_list(request):
@@ -30,6 +54,7 @@ def campaign_create(request):
 def campaign_detail(request, pk):
     campaign = get_object_or_404(Campaign, pk=pk)
     upload_form = UploadedFileForm()
+    paper1_form = Paper1AnalysisForm()
     latest_report = campaign.analysis_reports.first()
     return render(
         request,
@@ -37,6 +62,7 @@ def campaign_detail(request, pk):
         {
             "campaign": campaign,
             "upload_form": upload_form,
+            "paper1_form": paper1_form,
             "latest_report": latest_report,
             "export_excel_url": f"/campaigns/{campaign.pk}/export.xlsx",
             "dashboard": _build_dashboard(campaign, latest_report),
@@ -64,12 +90,71 @@ def upload_file(request, pk):
 @require_POST
 def run_analysis(request, pk):
     campaign = get_object_or_404(Campaign, pk=pk)
-    report = run_campaign_analysis(campaign)
+    report = run_basic_analysis(campaign)
     if report.status == report.Status.COMPLETE:
         messages.success(request, "Analysis report created.")
     else:
         messages.error(request, "Analysis failed. See the report summary for details.")
     return redirect("campaigns:campaign_detail", pk=campaign.pk)
+
+
+@require_POST
+def run_campaign_analysis(request, campaign_id):
+    campaign = get_object_or_404(Campaign, pk=campaign_id)
+    if not campaign.uploaded_files.exists():
+        messages.error(request, "Upload at least one monitoring file before running Paper 1 analysis.")
+        return redirect("campaigns:campaign_detail", pk=campaign.pk)
+
+    form = Paper1AnalysisForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Paper 1 analysis could not start. Please check the analysis parameters.")
+        return redirect("campaigns:campaign_detail", pk=campaign.pk)
+
+    try:
+        result = run_paper1_analysis(
+            campaign_id=campaign.pk,
+            timezone=form.cleaned_data["timezone"],
+            resample=form.cleaned_data["resample"],
+            gap_tolerance=form.cleaned_data["gap_tolerance"],
+            rebuild_canonical=form.cleaned_data["rebuild_canonical"],
+            run_sensitivity=form.cleaned_data["run_sensitivity"],
+            export_excel=form.cleaned_data["export_excel"],
+            requested_by="dashboard",
+        )
+    except Exception:
+        logger.exception("Paper 1 dashboard analysis failed for campaign %s", campaign.pk)
+        messages.error(request, "Paper 1 analysis failed. Review the campaign files and try again.")
+        return redirect("campaigns:campaign_detail", pk=campaign.pk)
+
+    if result.get("status") == "success":
+        messages.success(
+            request,
+            (
+                "Paper 1 analysis complete. "
+                f"Canonical rows: {result.get('canonical_valid_rows', 'N/A')}; "
+                f"hourly rows: {result.get('canonical_hourly_rows', 'N/A')}."
+            ),
+        )
+    else:
+        logger.warning("Paper 1 analysis returned failure for campaign %s: %s", campaign.pk, result.get("error_message"))
+        messages.error(request, result.get("error_message") or "Paper 1 analysis could not be completed.")
+    return redirect("campaigns:campaign_detail", pk=campaign.pk)
+
+
+def download_paper_output(request, campaign_id, filename):
+    campaign = get_object_or_404(Campaign, pk=campaign_id)
+    allowed = _paper_output_filenames(campaign.pk)
+    if filename not in allowed:
+        raise Http404("Output file not found.")
+    path = _paper_output_dir(campaign.pk) / filename
+    try:
+        resolved = path.resolve()
+        resolved.relative_to(_paper_output_dir(campaign.pk).resolve())
+    except ValueError as exc:
+        raise Http404("Output file not found.") from exc
+    if not resolved.exists() or not resolved.is_file():
+        raise Http404("Output file not found.")
+    return FileResponse(open(resolved, "rb"), as_attachment=filename != "paper1_validation_report.md", filename=filename)
 
 
 def export_excel_report(request, pk):
@@ -98,6 +183,8 @@ def _build_dashboard(campaign, latest_report):
     gaps = summary.get("gaps", [])
     regime_counts = summary.get("regime_counts", {})
     prediction_metrics = summary.get("prediction_metrics", {})
+    prediction_metrics_by_regime = summary.get("prediction_metrics_by_regime", [])
+    prediction_errors = summary.get("prediction_errors", [])
     ingestion_debug = summary.get("ingestion_debug", [])
 
     imported_count = summary.get("measurement_count")
@@ -125,11 +212,26 @@ def _build_dashboard(campaign, latest_report):
         "regime_counts": regime_counts,
         "regime_bars": _bars(regime_counts),
         "prediction_metrics": prediction_metrics,
+        "prediction_metrics_by_regime": _dashboard_prediction_by_regime(prediction_metrics_by_regime),
+        "prediction_insights": build_prediction_insights(summary),
+        "prediction_errors": prediction_errors[:20],
         "gaps": gaps,
         "ingestion_debug": ingestion_debug,
         "time_series": _time_series_chart(measurements),
         "segment_bars": _segment_bars(segments),
         "summary": summary,
+        "source_file_inventory": summary.get("source_file_inventory", []),
+        "canonical_dataset_summary": summary.get("canonical_dataset_summary", {}),
+        "quality_flag_counts": summary.get("quality_flag_counts", {}),
+        "sampling_diagnostics": summary.get("sampling_diagnostics", {}),
+        "overlap_conflicts": summary.get("overlap_conflicts", []),
+        "dst_diagnostics": summary.get("dst_diagnostics", []),
+        "regime_sensitivity": summary.get("regime_sensitivity", []),
+        "prediction_skill_by_regime": summary.get("prediction_skill_by_regime", []),
+        "prediction_readiness": summary.get("prediction_readiness", []),
+        "sirem_readiness": summary.get("sirem_readiness", []),
+        "paper1_run_summary": _paper1_run_summary(summary),
+        "paper1_artifacts": _paper1_artifacts(campaign.pk),
     }
 
 
@@ -229,3 +331,81 @@ def _percent_or_na(value):
     if value is None or value == "":
         return "N/A"
     return f"{value}%"
+
+
+def _dashboard_prediction_by_regime(rows):
+    prepared = []
+    for row in rows:
+        updated = row.copy()
+        updated["mae_improvement_display"] = _signed_percent_or_na(row.get("mae_improvement_percent"))
+        updated["rmse_improvement_display"] = _signed_percent_or_na(row.get("rmse_improvement_percent"))
+        updated["improved"] = (
+            row.get("model") != "naive_baseline"
+            and row.get("mae_improvement_percent") is not None
+            and row.get("mae_improvement_percent") > 0
+        )
+        updated["badge"] = prediction_regime_badge(row)
+        prepared.append(updated)
+    return prepared
+
+
+def _signed_percent_or_na(value):
+    if value is None or value == "":
+        return "N/A"
+    return f"{value}%"
+
+
+def _paper1_run_summary(summary):
+    run_summary = summary.get("paper1_run_summary")
+    if run_summary:
+        return run_summary
+    return {
+        "status": "N/A",
+        "run_timestamp": "N/A",
+        "timezone": summary.get("analysis_config", {}).get("timezone_name", "N/A"),
+        "resample": summary.get("analysis_config", {}).get("resample_interval", "N/A"),
+        "gap_tolerance": summary.get("analysis_config", {}).get("gap_tolerance_multiplier", "N/A"),
+        "rebuild_canonical": None,
+        "run_sensitivity": bool(summary.get("regime_sensitivity")),
+        "export_excel": None,
+        "raw_imported_rows": summary.get("canonical_dataset_summary", {}).get("raw_records", "N/A"),
+        "exact_duplicate_rows_removed": summary.get("row_reconciliation_summary", {}).get("exact_duplicate_rows_removed", "N/A"),
+        "duplicate_conflict_rows": summary.get("row_reconciliation_summary", {}).get("duplicate_conflict_rows", "N/A"),
+        "canonical_valid_rows": summary.get("canonical_dataset_summary", {}).get("canonical_valid_records", "N/A"),
+        "canonical_hourly_rows": len(summary.get("canonical_hourly_data", [])),
+        "timezone_audit_rows": summary.get("dst_diagnostics_compact_summary", {}).get("timezone_audit_rows", "N/A"),
+        "dst_ambiguous_count": summary.get("dst_diagnostics_compact_summary", {}).get("dst_ambiguous_count", "N/A"),
+        "dst_nonexistent_count": summary.get("dst_diagnostics_compact_summary", {}).get("dst_nonexistent_count", "N/A"),
+        "total_sampling_irregularities": summary.get("sampling_gaps_compact_summary", {}).get("total_sampling_irregularities", "N/A"),
+        "short_gaps": summary.get("sampling_gaps_compact_summary", {}).get("short_gaps", "N/A"),
+        "long_gaps": summary.get("sampling_gaps_compact_summary", {}).get("long_gaps", "N/A"),
+        "regime_labels_found": list((summary.get("regime_counts") or {}).keys()),
+        "prediction_horizons_evaluated": sorted((summary.get("prediction_metrics") or {}).keys()),
+        "models_evaluated": sorted({model for results in (summary.get("prediction_metrics") or {}).values() for model in results.keys()}),
+        "small_sample_warning_count": sum(1 for row in summary.get("prediction_skill_by_regime", []) if row.get("small_sample_warning")),
+    }
+
+
+def _paper1_artifacts(campaign_id):
+    output_dir = _paper_output_dir(campaign_id)
+    artifacts = []
+    for filename, label in PAPER_OUTPUT_FILES.items():
+        resolved_name = filename.format(campaign_id=campaign_id)
+        exists = (output_dir / resolved_name).is_file()
+        artifacts.append(
+            {
+                "filename": resolved_name,
+                "label": label,
+                "exists": exists,
+                "url": f"/campaigns/{campaign_id}/paper-output/{resolved_name}/" if exists else "",
+            }
+        )
+    return artifacts
+
+
+def _paper_output_filenames(campaign_id):
+    return {filename.format(campaign_id=campaign_id) for filename in PAPER_OUTPUT_FILES}
+
+
+def _paper_output_dir(campaign_id):
+    return settings.BASE_DIR / "paper_outputs" / f"campaign_{campaign_id}"

@@ -24,3 +24,36 @@ class UploadedFileForm(forms.ModelForm):
         if not uploaded.name.lower().endswith(allowed_extensions):
             raise forms.ValidationError("Upload a CSV or Excel file.")
         return uploaded
+
+
+class Paper1AnalysisForm(forms.Form):
+    timezone = forms.CharField(initial="Europe/Rome", max_length=80)
+    resample = forms.CharField(initial="1H", max_length=20, label="Resample interval")
+    gap_tolerance = forms.FloatField(initial=1.5, min_value=0.0001)
+    rebuild_canonical = forms.BooleanField(
+        initial=True,
+        required=False,
+        label="Rebuild canonical dataset",
+    )
+    run_sensitivity = forms.BooleanField(
+        initial=True,
+        required=False,
+        label="Run regime threshold sensitivity",
+    )
+    export_excel = forms.BooleanField(
+        initial=True,
+        required=False,
+        label="Export Excel report",
+    )
+
+    def clean_timezone(self):
+        value = self.cleaned_data["timezone"].strip()
+        if not value:
+            raise forms.ValidationError("Timezone cannot be empty.")
+        return value
+
+    def clean_resample(self):
+        value = self.cleaned_data["resample"].strip()
+        if not value:
+            raise forms.ValidationError("Resample interval cannot be empty.")
+        return value

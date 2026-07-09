@@ -1,19 +1,32 @@
 from decimal import Decimal
 from datetime import timedelta
 from io import BytesIO
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
+from django.conf import settings
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from openpyxl import Workbook, load_workbook
 
 from .models import AnalysisReport, Campaign, Measurement, UploadedFile
 from .services.analysis import run_campaign_analysis
+from .services.analysis_config import AnalysisConfig
+from .services.canonicalization import build_canonical_outputs
 from .services.ingestion import parse_decimal, read_uploaded_file
 from .services.prediction import evaluate_prediction_models
+from .services.regime_sensitivity import build_regime_sensitivity
 from .services.regimes import classify_regimes
 from .services.reports import build_summary
+from .services.resampling import build_hourly_resampling
+from .services.sampling_gaps import detect_sampling_gaps
+from .services.source_inventory import build_source_file_inventory
+from .services.time_diagnostics import build_dst_diagnostics
 
 
 class CampaignModelTests(TestCase):
@@ -107,10 +120,34 @@ class CampaignViewTests(TestCase):
                 "regime_counts": {"stable_low": 1, "rising": 2},
                 "prediction_metrics": {
                     "1h": {
-                        "naive_baseline": {"samples": 2, "mae": 8.0, "rmse": 9.0},
-                        "ridge": {"samples": 2, "mae": 4.0, "rmse": 5.0},
+                        "naive_baseline": {"samples": 3, "mae": 8.0, "rmse": 9.0},
+                        "ridge": {"samples": 3, "mae": 4.0, "rmse": 5.0},
                     }
                 },
+                "prediction_metrics_by_regime": [
+                    {
+                        "horizon": "1h",
+                        "model": "ridge",
+                        "regime": "rising",
+                        "samples": 3,
+                        "mae": 4.0,
+                        "rmse": 5.0,
+                        "mae_improvement_percent": 50.0,
+                        "rmse_improvement_percent": 44.44,
+                    }
+                ],
+                "prediction_errors": [
+                    {
+                        "timestamp": "2026-01-01T01:00:00+00:00",
+                        "horizon": "1h",
+                        "model": "ridge",
+                        "actual_radon": 150,
+                        "predicted_radon": 140,
+                        "absolute_error": 10,
+                        "regime": "rising",
+                        "segment_id": 1,
+                    }
+                ],
                 "gaps": [{"from": "2026-01-01T01:00:00+00:00", "to": "2026-01-01T03:00:00+00:00", "minutes": 120.0}],
                 "segments": [
                     {
@@ -168,12 +205,18 @@ class CampaignViewTests(TestCase):
         self.assertContains(response, "elevated_dynamic")
         self.assertContains(response, "Regime Counts")
         self.assertContains(response, "Prediction Metrics")
+        self.assertContains(response, "Prediction Performance by Regime")
+        self.assertContains(response, "Prediction Insights")
+        self.assertContains(response, "Prediction Error Analysis")
+        self.assertContains(response, "Improves")
+        self.assertContains(response, "Regime-aware evaluation helps identify")
         self.assertContains(response, "naive baseline")
         self.assertContains(response, "Detected Gaps")
         self.assertContains(response, "Ingestion Diagnostics")
         self.assertContains(response, "dashboard.xlsx")
         self.assertContains(response, "Radon Time Series")
         self.assertContains(response, "<svg", html=False)
+        self.assertContains(response, "Paper 1 Research Diagnostics")
 
     def test_campaign_detail_dashboard_handles_missing_summary_fields(self):
         campaign = Campaign.objects.create(name="Sparse Dashboard")
@@ -189,6 +232,7 @@ class CampaignViewTests(TestCase):
         self.assertContains(response, "Dashboard Summary")
         self.assertContains(response, "N/A")
         self.assertContains(response, "Radon Time Series")
+        self.assertContains(response, "Prediction Insights")
 
     def test_campaign_detail_links_to_excel_report(self):
         campaign = Campaign.objects.create(name="Excel Link Campaign")
@@ -203,6 +247,156 @@ class CampaignViewTests(TestCase):
 
         self.assertContains(response, "Download Excel Report")
         self.assertContains(response, reverse("campaigns:export_excel_report", args=[campaign.pk]))
+
+    def test_campaign_detail_renders_paper1_analysis_form(self):
+        campaign = Campaign.objects.create(name="Paper Form Campaign")
+
+        response = self.client.get(reverse("campaigns:campaign_detail", args=[campaign.pk]))
+
+        self.assertContains(response, "Paper 1 Research Analysis")
+        self.assertContains(response, "Run full Paper 1 analysis")
+        self.assertContains(response, "Europe/Rome")
+
+    @patch("campaigns.views.run_paper1_analysis")
+    def test_run_campaign_analysis_post_calls_shared_runner(self, runner):
+        campaign = Campaign.objects.create(name="Paper Runner Campaign")
+        UploadedFile.objects.create(
+            campaign=campaign,
+            original_name="runner.csv",
+            file=SimpleUploadedFile("runner.csv", b"Time,Radon\n2026-01-01 00:00,100\n"),
+        )
+        runner.return_value = {
+            "status": "success",
+            "canonical_valid_rows": 1,
+            "canonical_hourly_rows": 1,
+        }
+
+        response = self.client.post(
+            reverse("campaigns:run_campaign_analysis", args=[campaign.pk]),
+            {
+                "timezone": "Europe/Rome",
+                "resample": "1H",
+                "gap_tolerance": "1.5",
+                "rebuild_canonical": "on",
+                "run_sensitivity": "on",
+                "export_excel": "on",
+            },
+            follow=True,
+        )
+
+        self.assertRedirects(response, reverse("campaigns:campaign_detail", args=[campaign.pk]))
+        runner.assert_called_once()
+        self.assertContains(response, "Paper 1 analysis complete")
+
+    @patch("campaigns.views.run_paper1_analysis")
+    def test_run_campaign_analysis_invalid_gap_tolerance_is_graceful(self, runner):
+        campaign = Campaign.objects.create(name="Invalid Gap Campaign")
+        UploadedFile.objects.create(
+            campaign=campaign,
+            original_name="runner.csv",
+            file=SimpleUploadedFile("runner.csv", b"Time,Radon\n2026-01-01 00:00,100\n"),
+        )
+
+        response = self.client.post(
+            reverse("campaigns:run_campaign_analysis", args=[campaign.pk]),
+            {
+                "timezone": "Europe/Rome",
+                "resample": "1H",
+                "gap_tolerance": "-1",
+            },
+            follow=True,
+        )
+
+        runner.assert_not_called()
+        self.assertContains(response, "Paper 1 analysis could not start")
+
+    @patch("campaigns.views.run_paper1_analysis")
+    def test_run_campaign_analysis_requires_uploaded_files(self, runner):
+        campaign = Campaign.objects.create(name="No Upload Campaign")
+
+        response = self.client.post(
+            reverse("campaigns:run_campaign_analysis", args=[campaign.pk]),
+            {
+                "timezone": "Europe/Rome",
+                "resample": "1H",
+                "gap_tolerance": "1.5",
+            },
+            follow=True,
+        )
+
+        runner.assert_not_called()
+        self.assertContains(response, "Upload at least one monitoring file")
+
+    def test_missing_campaign_for_paper1_run_returns_404(self):
+        response = self.client.post(
+            reverse("campaigns:run_campaign_analysis", args=[999999]),
+            {"timezone": "Europe/Rome", "resample": "1H", "gap_tolerance": "1.5"},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_latest_paper1_summary_is_displayed(self):
+        campaign = Campaign.objects.create(name="Latest Paper Summary")
+        AnalysisReport.objects.create(
+            campaign=campaign,
+            status=AnalysisReport.Status.COMPLETE,
+            summary="Complete.",
+            summary_json={
+                "paper1_run_summary": {
+                    "status": "success",
+                    "run_timestamp": "2026-07-09T08:00:00+00:00",
+                    "timezone": "Europe/Rome",
+                    "resample": "1H",
+                    "gap_tolerance": 1.5,
+                    "rebuild_canonical": True,
+                    "run_sensitivity": True,
+                    "export_excel": True,
+                    "raw_imported_rows": 10,
+                    "exact_duplicate_rows_removed": 2,
+                    "duplicate_conflict_rows": 1,
+                    "canonical_valid_rows": 7,
+                    "canonical_hourly_rows": 3,
+                    "timezone_audit_rows": 7,
+                    "dst_ambiguous_count": 1,
+                    "dst_nonexistent_count": 0,
+                    "total_sampling_irregularities": 4,
+                    "short_gaps": 2,
+                    "long_gaps": 1,
+                    "regime_labels_found": ["stable_low"],
+                    "prediction_horizons_evaluated": ["1h"],
+                    "models_evaluated": ["naive_baseline"],
+                    "small_sample_warning_count": 0,
+                },
+                "segments": [],
+                "regime_counts": {"stable_low": 1},
+            },
+        )
+
+        response = self.client.get(reverse("campaigns:campaign_detail", args=[campaign.pk]))
+
+        self.assertContains(response, "Latest Paper 1 Analysis Run")
+        self.assertContains(response, "Timezone audit rows")
+        self.assertContains(response, "DST ambiguous count")
+        self.assertContains(response, "Sampling irregularities")
+
+    def test_artifact_links_only_show_for_existing_expected_files(self):
+        campaign = Campaign.objects.create(name="Artifact Campaign")
+        AnalysisReport.objects.create(
+            campaign=campaign,
+            status=AnalysisReport.Status.COMPLETE,
+            summary="Complete.",
+            summary_json={"segments": [], "regime_counts": {}},
+        )
+        with TemporaryDirectory() as tempdir:
+            base_dir = Path(tempdir)
+            output_dir = base_dir / "paper_outputs" / f"campaign_{campaign.pk}"
+            output_dir.mkdir(parents=True)
+            (output_dir / "paper1_validation_report.md").write_text("validation", encoding="utf-8")
+            with override_settings(BASE_DIR=base_dir):
+                response = self.client.get(reverse("campaigns:campaign_detail", args=[campaign.pk]))
+
+        self.assertContains(response, "Open validation report")
+        self.assertContains(response, "not generated yet")
 
 
 class AnalysisPipelineTests(TestCase):
@@ -508,7 +702,8 @@ class PredictionModelTests(TestCase):
             for index in range(10)
         ]
 
-        metrics = evaluate_prediction_models(rows)
+        evaluation = evaluate_prediction_models(rows)
+        metrics = evaluation["overall"]
 
         self.assertEqual(metrics["1h"]["naive_baseline"]["samples"], 7)
         self.assertEqual(metrics["1h"]["naive_baseline"]["mae"], 10.0)
@@ -516,6 +711,8 @@ class PredictionModelTests(TestCase):
         self.assertLess(metrics["1h"]["ridge"]["mae"], metrics["1h"]["naive_baseline"]["mae"])
         self.assertEqual(metrics["6h"]["naive_baseline"]["samples"], 2)
         self.assertEqual(metrics["6h"]["naive_baseline"]["mae"], 60.0)
+        self.assertTrue(evaluation["by_regime"])
+        self.assertTrue(evaluation["errors"])
 
     def test_prediction_samples_do_not_cross_segment_boundaries(self):
         start = timezone.datetime(2026, 4, 1, 0, 0, tzinfo=timezone.get_current_timezone())
@@ -536,7 +733,7 @@ class PredictionModelTests(TestCase):
             for index in range(3)
         )
 
-        metrics = evaluate_prediction_models(rows)
+        metrics = evaluate_prediction_models(rows)["overall"]
 
         self.assertEqual(metrics["1h"]["naive_baseline"]["samples"], 0)
         self.assertEqual(metrics["6h"]["naive_baseline"]["samples"], 0)
@@ -562,8 +759,29 @@ class PredictionModelTests(TestCase):
 
         self.assertEqual(report.summary_json["prediction_metrics"]["1h"]["naive_baseline"]["samples"], 7)
         self.assertEqual(report.summary_json["prediction_metrics"]["6h"]["naive_baseline"]["samples"], 2)
+        self.assertIn("prediction_metrics_by_regime", report.summary_json)
+        self.assertIn("prediction_errors", report.summary_json)
+        self.assertTrue(report.summary_json["prediction_metrics_by_regime"])
+        self.assertTrue(report.summary_json["prediction_errors"])
         self.assertIn("Model Performance", report.html_report)
         self.assertIn("ridge", report.html_report)
+
+    def test_prediction_evaluation_handles_missing_regime_labels(self):
+        start = timezone.datetime(2026, 4, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        rows = [
+            {
+                "measured_at": start + timedelta(hours=index),
+                "radon_bq_m3": Decimal(str(100 + index * 10)),
+                "segment_id": 1,
+            }
+            for index in range(5)
+        ]
+
+        evaluation = evaluate_prediction_models(rows)
+
+        regimes = {row["regime"] for row in evaluation["by_regime"]}
+        self.assertEqual(regimes, {"unclassified"})
+        self.assertEqual(evaluation["errors"][0]["regime"], "unclassified")
 
     def test_campaign_detail_exposes_model_performance(self):
         campaign = Campaign.objects.create(name="Visible Models")
@@ -614,6 +832,30 @@ class ExcelExportTests(TestCase):
                         "ridge": {"samples": 1, "mae": 5.0, "rmse": 6.0},
                     }
                 },
+                "prediction_metrics_by_regime": [
+                    {
+                        "horizon": "1h",
+                        "model": "ridge",
+                        "regime": "rising",
+                        "samples": 1,
+                        "mae": 5.0,
+                        "rmse": 6.0,
+                        "mae_improvement_percent": 50.0,
+                        "rmse_improvement_percent": 40.0,
+                    }
+                ],
+                "prediction_errors": [
+                    {
+                        "timestamp": "2026-01-01T01:00:00+00:00",
+                        "horizon": "1h",
+                        "model": "ridge",
+                        "actual_radon": 110,
+                        "predicted_radon": 105,
+                        "absolute_error": 5,
+                        "regime": "rising",
+                        "segment_id": 1,
+                    }
+                ],
                 "gaps": [{"from": "2026-01-01T00:00:00+00:00", "to": "2026-01-01T02:00:00+00:00", "minutes": 120}],
                 "segments": [
                     {
@@ -675,9 +917,27 @@ class ExcelExportTests(TestCase):
                 "Segments",
                 "Regime Counts",
                 "Prediction Metrics",
+                "Prediction Insights",
+                "Prediction by Regime",
+                "Prediction Errors",
                 "Gaps",
                 "Ingestion Diagnostics",
                 "Measurements",
+                "Source File Inventory",
+                "Canonical Dataset Summary",
+                "Canonical Hourly Data",
+                "Quality Flags",
+                "Quality Flag Dictionary",
+                "Sampling Diagnostics",
+                "Overlap Conflicts",
+                "DST Diagnostics",
+                "Resampling Summary",
+                "Regime Sensitivity",
+                "Prediction Skill by Regime",
+                "Prediction Readiness",
+                "SIREM Readiness",
+                "Reproducibility Config",
+                "Row Reconciliation Summary",
             ],
         )
         self.assertEqual(workbook["Summary"]["B2"].value, "Export Campaign")
@@ -688,6 +948,10 @@ class ExcelExportTests(TestCase):
         self.assertEqual(workbook["Segments"]["G2"].value, "low_dynamic")
         self.assertEqual(workbook["Regime Counts"]["A2"].value, "stable_low")
         self.assertEqual(workbook["Prediction Metrics"]["A2"].value, "1h")
+        self.assertEqual(workbook["Prediction Insights"]["A1"].value, "Prediction Insights")
+        self.assertEqual(workbook["Prediction by Regime"]["C2"].value, "rising")
+        self.assertEqual(workbook["Prediction Errors"]["G2"].value, "rising")
+        self.assertEqual(workbook["Row Reconciliation Summary"]["A1"].value, "Field")
         self.assertEqual(workbook["Gaps"]["C2"].value, 120)
         self.assertEqual(workbook["Ingestion Diagnostics"]["A2"].value, "export.csv")
         self.assertEqual(workbook["Measurements"]["B2"].value, 100.0)
@@ -720,6 +984,174 @@ class ExcelExportTests(TestCase):
         self.assertEqual(workbook["Summary"]["B3"].value, "N/A")
         self.assertEqual(workbook["Segments"]["A2"].value, "N/A")
         self.assertEqual(workbook["Prediction Metrics"]["A2"].value, "6h")
+
+
+class PaperOneResearchWorkflowTests(TestCase):
+    def test_source_inventory_reports_start_end_and_row_counts(self):
+        campaign = Campaign.objects.create(name="Inventory Campaign")
+        uploaded = UploadedFile.objects.create(
+            campaign=campaign,
+            original_name="AranetRn+ 2E81E_test.csv",
+            file=SimpleUploadedFile("inventory.csv", b"Time,Radon\n"),
+        )
+        start = timezone.datetime(2026, 1, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        rows = [
+            {
+                "source_file": uploaded,
+                "measured_at": start + timedelta(minutes=10 * index),
+                "radon_bq_m3": Decimal("100"),
+                "temperature_c": Decimal("20"),
+                "humidity_percent": None,
+                "pressure_hpa": None,
+            }
+            for index in range(3)
+        ]
+        inventory = build_source_file_inventory(
+            rows,
+            [{"source_file_id": uploaded.id, "filename": uploaded.original_name, "raw_rows_read": 4, "detected_columns": ["Time", "Radon"], "parsed_measurement_rows": 3}],
+        )
+
+        self.assertEqual(inventory[0]["device_id"], "2E81E")
+        self.assertEqual(inventory[0]["raw_rows"], 4)
+        self.assertEqual(inventory[0]["imported_measurement_rows"], 3)
+        self.assertEqual(inventory[0]["nominal_sampling_interval_minutes"], 10.0)
+
+    def test_canonicalization_deduplicates_exact_rows_and_preserves_provenance(self):
+        campaign = Campaign.objects.create(name="Canonical Campaign")
+        first = UploadedFile.objects.create(campaign=campaign, original_name="a.csv", file=SimpleUploadedFile("a.csv", b""))
+        second = UploadedFile.objects.create(campaign=campaign, original_name="b.csv", file=SimpleUploadedFile("b.csv", b""))
+        timestamp = timezone.datetime(2026, 1, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        rows = [
+            {"source_file": first, "measured_at": timestamp, "radon_bq_m3": Decimal("100"), "temperature_c": None, "humidity_percent": None, "pressure_hpa": None},
+            {"source_file": second, "measured_at": timestamp, "radon_bq_m3": Decimal("100"), "temperature_c": None, "humidity_percent": None, "pressure_hpa": None},
+        ]
+
+        outputs = build_canonical_outputs(rows, AnalysisConfig())
+
+        self.assertEqual(outputs["canonical_dataset_summary"]["exact_duplicates_removed"], 1)
+        self.assertEqual(outputs["canonical_records_preview"][0]["source_count"], 2)
+
+    def test_canonicalization_flags_duplicate_conflicts(self):
+        campaign = Campaign.objects.create(name="Conflict Campaign")
+        first = UploadedFile.objects.create(campaign=campaign, original_name="a.csv", file=SimpleUploadedFile("a.csv", b""))
+        second = UploadedFile.objects.create(campaign=campaign, original_name="b.csv", file=SimpleUploadedFile("b.csv", b""))
+        timestamp = timezone.datetime(2026, 1, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        rows = [
+            {"source_file": first, "measured_at": timestamp, "radon_bq_m3": Decimal("100"), "temperature_c": None, "humidity_percent": None, "pressure_hpa": None},
+            {"source_file": second, "measured_at": timestamp, "radon_bq_m3": Decimal("130"), "temperature_c": None, "humidity_percent": None, "pressure_hpa": None},
+        ]
+
+        outputs = build_canonical_outputs(rows, AnalysisConfig())
+
+        self.assertEqual(outputs["canonical_dataset_summary"]["conflicts"], 1)
+        self.assertIn("DUPLICATE_CONFLICT", outputs["canonical_records_preview"][0]["quality_flags"])
+
+    def test_sampling_aware_gaps_handle_10_minute_and_60_minute_data(self):
+        config = AnalysisConfig(gap_tolerance_multiplier=1.5)
+        start = timezone.datetime(2026, 1, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        regular_10 = [{"measured_at": start + timedelta(minutes=10 * index)} for index in range(6)]
+        regular_60 = [{"measured_at": start + timedelta(hours=index)} for index in range(6)]
+        missing_10 = [{"measured_at": start}, {"measured_at": start + timedelta(minutes=10)}, {"measured_at": start + timedelta(minutes=40)}]
+
+        self.assertEqual(detect_sampling_gaps(regular_10, config), [])
+        self.assertEqual(detect_sampling_gaps(regular_60, config), [])
+        self.assertEqual(detect_sampling_gaps(missing_10, config)[0]["gap_class"], "GAP_SHORT")
+
+    def test_dst_ambiguity_is_flagged_for_autumn_fallback(self):
+        config = AnalysisConfig(timezone_name="Europe/Rome")
+        ambiguous = timezone.datetime(2026, 10, 25, 2, 30, tzinfo=ZoneInfo("Europe/Rome"))
+        rows = [{"measured_at": ambiguous, "radon_bq_m3": Decimal("100")}]
+
+        diagnostics = build_dst_diagnostics(rows, config)
+
+        self.assertIn("DST_AMBIGUOUS", diagnostics[0]["flags"])
+
+    def test_hourly_resampling_counts_completeness_and_flags_low_completeness(self):
+        config = AnalysisConfig(completeness_threshold=0.75)
+        start = timezone.datetime(2026, 1, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        rows = [
+            {"measured_at": start, "radon_bq_m3": Decimal("100"), "temperature_c": None, "humidity_percent": None, "pressure_hpa": None},
+            {"measured_at": start + timedelta(minutes=10), "radon_bq_m3": Decimal("110"), "temperature_c": None, "humidity_percent": None, "pressure_hpa": None},
+        ]
+
+        outputs = build_hourly_resampling(rows, config)
+
+        self.assertEqual(outputs["canonical_hourly_data"][0]["radon_count"], 2)
+        self.assertIn("LOW_COMPLETENESS", outputs["canonical_hourly_data"][0]["quality_flags"])
+
+    def test_regime_threshold_sensitivity_returns_agreement_and_counts(self):
+        config = AnalysisConfig()
+        start = timezone.datetime(2026, 1, 1, 0, 0, tzinfo=timezone.get_current_timezone())
+        rows = [
+            {"measured_at": start + timedelta(hours=index), "radon_bq_m3": Decimal(str(value))}
+            for index, value in enumerate([80, 110, 320])
+        ]
+
+        sensitivity = build_regime_sensitivity(rows, config)
+
+        self.assertEqual(len(sensitivity), 5)
+        self.assertIn("regime_counts", sensitivity[0])
+        self.assertIn("percentage_agreement_with_baseline", sensitivity[0])
+
+    def test_pipeline_summary_contains_paper_one_outputs(self):
+        campaign = Campaign.objects.create(name="Paper One Campaign")
+        UploadedFile.objects.create(
+            campaign=campaign,
+            original_name="paper.csv",
+            file=SimpleUploadedFile(
+                "paper.csv",
+                b"Time,Radon,Temperature,Humidity,Pressure\n2026-01-01 00:00,100,20,45,1000\n2026-01-01 01:00,110,20,45,1000\n2026-01-01 02:00,120,20,45,1000\n",
+            ),
+        )
+
+        report = run_campaign_analysis(campaign)
+
+        self.assertIn("source_file_inventory", report.summary_json)
+        self.assertIn("canonical_dataset_summary", report.summary_json)
+        self.assertIn("quality_flag_counts", report.summary_json)
+        self.assertIn("sampling_diagnostics", report.summary_json)
+        self.assertIn("sirem_readiness", report.summary_json)
+
+    def test_analyze_campaign_command_creates_paper_outputs(self):
+        campaign = Campaign.objects.create(name="Command Campaign")
+        UploadedFile.objects.create(
+            campaign=campaign,
+            original_name="command.csv",
+            file=SimpleUploadedFile(
+                "command.csv",
+                (
+                    "Time,Radon,Temperature,Humidity,Pressure\n"
+                    "2026-01-01 00:00,100,20,45,1000\n"
+                    "2026-01-01 01:00,110,20,45,1000\n"
+                    "2026-01-01 02:00,120,20,45,1000\n"
+                ).encode("utf-8"),
+            ),
+        )
+
+        with TemporaryDirectory() as tempdir:
+            call_command(
+                "analyze_campaign",
+                campaign.id,
+                "--timezone",
+                "Europe/Rome",
+                "--resample",
+                "1H",
+                "--gap-tolerance",
+                "1.5",
+                "--rebuild-canonical",
+                "--run-sensitivity",
+                "--export-excel",
+                "--output-dir",
+                tempdir,
+                verbosity=0,
+            )
+            output_dir = Path(tempdir)
+
+            self.assertTrue((output_dir / f"radon_campaign_{campaign.id}_report.xlsx").exists())
+            self.assertTrue((output_dir / "row_reconciliation_summary.csv").exists())
+            self.assertTrue((output_dir / "dst_diagnostics_compact_summary.csv").exists())
+            self.assertTrue((output_dir / "sampling_gaps_compact_summary.csv").exists())
+            self.assertTrue((output_dir / "paper1_validation_report.md").exists())
 
 
 def _segment_rows(start, segment_id, radon_values, regimes):

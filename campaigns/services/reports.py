@@ -8,22 +8,36 @@ STAT_FIELDS = ("radon_bq_m3", "temperature_c", "humidity_percent", "pressure_hpa
 DYNAMIC_REGIMES = {"rising", "falling", "sudden_rise", "sudden_drop"}
 
 
-def build_summary(rows, gaps, uploaded_file_count, prediction_metrics=None, ingestion_debug=None):
+def build_summary(
+    rows,
+    gaps,
+    uploaded_file_count,
+    prediction_metrics=None,
+    ingestion_debug=None,
+    prediction_metrics_by_regime=None,
+    prediction_errors=None,
+    research_outputs=None,
+):
     segments = {}
     for row in rows:
         segments.setdefault(row["segment_id"], []).append(row)
 
-    return {
+    summary = {
         "uploaded_file_count": uploaded_file_count,
         "measurement_count": len(rows),
         "segment_count": len(segments),
         "gap_count": len(gaps),
         "regime_counts": regime_counts(rows),
         "prediction_metrics": prediction_metrics or {},
+        "prediction_metrics_by_regime": prediction_metrics_by_regime or [],
+        "prediction_errors": prediction_errors or [],
         "ingestion_debug": ingestion_debug or [],
         "gaps": [_serialize_gap(gap) for gap in gaps],
         "segments": [_segment_summary(segment_id, segment_rows) for segment_id, segment_rows in sorted(segments.items())],
     }
+    if research_outputs:
+        summary.update(research_outputs)
+    return summary
 
 
 def summary_to_text(summary_json):
@@ -37,7 +51,7 @@ def summary_to_text(summary_json):
         f"Imported {summary_json['measurement_count']} measurement(s) from "
         f"{summary_json['uploaded_file_count']} uploaded file(s). The pipeline identified "
         f"{summary_json['segment_count']} segment(s), and detected "
-        f"{summary_json['gap_count']} gap(s) over 60 minutes. Segment labels summarize exposure level and dynamics; "
+        f"{summary_json['gap_count']} sampling-aware gap(s). Segment labels summarize exposure level and dynamics; "
         "they do not replace the per-measurement regime classifications."
     )
 
@@ -245,6 +259,10 @@ def _serialize_gap(gap):
         "from": gap["from"].isoformat(),
         "to": gap["to"].isoformat(),
         "minutes": gap["minutes"],
+        "expected_interval_minutes": gap.get("expected_interval_minutes"),
+        "threshold_minutes": gap.get("threshold_minutes"),
+        "gap_class": gap.get("gap_class"),
+        "reason": gap.get("reason"),
     }
 
 

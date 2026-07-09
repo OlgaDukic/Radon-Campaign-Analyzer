@@ -10,5 +10,7 @@ urlpatterns = [
     path("campaigns/<int:pk>/", views.campaign_detail, name="campaign_detail"),
     path("campaigns/<int:pk>/upload/", views.upload_file, name="upload_file"),
     path("campaigns/<int:pk>/analyze/", views.run_analysis, name="run_analysis"),
+    path("campaigns/<int:campaign_id>/run-analysis/", views.run_campaign_analysis, name="run_campaign_analysis"),
+    path("campaigns/<int:campaign_id>/paper-output/<str:filename>/", views.download_paper_output, name="download_paper_output"),
     path("campaigns/<int:pk>/export.xlsx", views.export_excel_report, name="export_excel_report"),
 ]

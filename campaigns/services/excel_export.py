@@ -6,15 +6,36 @@ from django.utils.dateparse import parse_datetime
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
+from .paper_outputs import build_row_reconciliation_summary
+from .prediction_insights import build_prediction_insights
+
 
 SHEETS = [
     "Summary",
     "Segments",
     "Regime Counts",
     "Prediction Metrics",
+    "Prediction Insights",
+    "Prediction by Regime",
+    "Prediction Errors",
     "Gaps",
     "Ingestion Diagnostics",
     "Measurements",
+    "Source File Inventory",
+    "Canonical Dataset Summary",
+    "Canonical Hourly Data",
+    "Quality Flags",
+    "Quality Flag Dictionary",
+    "Sampling Diagnostics",
+    "Overlap Conflicts",
+    "DST Diagnostics",
+    "Resampling Summary",
+    "Regime Sensitivity",
+    "Prediction Skill by Regime",
+    "Prediction Readiness",
+    "SIREM Readiness",
+    "Reproducibility Config",
+    "Row Reconciliation Summary",
 ]
 
 
@@ -27,9 +48,27 @@ def build_campaign_report_workbook(campaign, report=None):
     _write_segments(workbook.create_sheet("Segments"), summary)
     _write_regime_counts(workbook.create_sheet("Regime Counts"), summary)
     _write_prediction_metrics(workbook.create_sheet("Prediction Metrics"), summary)
+    _write_prediction_insights(workbook.create_sheet("Prediction Insights"), summary)
+    _write_prediction_by_regime(workbook.create_sheet("Prediction by Regime"), summary)
+    _write_prediction_errors(workbook.create_sheet("Prediction Errors"), summary)
     _write_gaps(workbook.create_sheet("Gaps"), summary)
     _write_ingestion_diagnostics(workbook.create_sheet("Ingestion Diagnostics"), summary)
     _write_measurements(workbook.create_sheet("Measurements"), campaign)
+    _write_source_file_inventory(workbook.create_sheet("Source File Inventory"), summary)
+    _write_canonical_dataset_summary(workbook.create_sheet("Canonical Dataset Summary"), summary)
+    _write_canonical_hourly_data(workbook.create_sheet("Canonical Hourly Data"), summary)
+    _write_quality_flags(workbook.create_sheet("Quality Flags"), summary)
+    _write_quality_flag_dictionary(workbook.create_sheet("Quality Flag Dictionary"), summary)
+    _write_sampling_diagnostics(workbook.create_sheet("Sampling Diagnostics"), summary)
+    _write_overlap_conflicts(workbook.create_sheet("Overlap Conflicts"), summary)
+    _write_dst_diagnostics(workbook.create_sheet("DST Diagnostics"), summary)
+    _write_resampling_summary(workbook.create_sheet("Resampling Summary"), summary)
+    _write_regime_sensitivity(workbook.create_sheet("Regime Sensitivity"), summary)
+    _write_prediction_skill_by_regime(workbook.create_sheet("Prediction Skill by Regime"), summary)
+    _write_prediction_readiness(workbook.create_sheet("Prediction Readiness"), summary)
+    _write_sirem_readiness(workbook.create_sheet("SIREM Readiness"), summary)
+    _write_reproducibility_config(workbook.create_sheet("Reproducibility Config"), summary)
+    _write_row_reconciliation_summary(workbook.create_sheet("Row Reconciliation Summary"), summary)
 
     for worksheet in workbook.worksheets:
         _format_sheet(worksheet)
@@ -138,6 +177,68 @@ def _write_prediction_metrics(worksheet, summary):
             )
 
 
+def _write_prediction_by_regime(worksheet, summary):
+    worksheet.append(
+        [
+            "Forecast horizon",
+            "Model",
+            "Regime/Label",
+            "Samples",
+            "MAE",
+            "RMSE",
+            "MAE improvement %",
+            "RMSE improvement %",
+        ]
+    )
+    for row in summary.get("prediction_metrics_by_regime", []):
+        worksheet.append(
+            [
+                _value(row.get("horizon")),
+                _value(row.get("model")),
+                _value(row.get("regime")),
+                _value(row.get("samples")),
+                _number(row.get("mae")),
+                _number(row.get("rmse")),
+                _number(row.get("mae_improvement_percent")),
+                _number(row.get("rmse_improvement_percent")),
+            ]
+        )
+
+
+def _write_prediction_insights(worksheet, summary):
+    worksheet.append(["Prediction Insights"])
+    for insight in build_prediction_insights(summary):
+        worksheet.append([insight])
+
+
+def _write_prediction_errors(worksheet, summary):
+    worksheet.append(
+        [
+            "Timestamp",
+            "Forecast horizon",
+            "Model",
+            "Actual radon",
+            "Predicted radon",
+            "Absolute error",
+            "Regime/Label",
+            "Segment ID",
+        ]
+    )
+    for row in summary.get("prediction_errors", []):
+        worksheet.append(
+            [
+                _datetime_cell(row.get("timestamp")),
+                _value(row.get("horizon")),
+                _value(row.get("model")),
+                _number(row.get("actual_radon")),
+                _number(row.get("predicted_radon")),
+                _number(row.get("absolute_error")),
+                _value(row.get("regime")),
+                _value(row.get("segment_id")),
+            ]
+        )
+
+
 def _write_gaps(worksheet, summary):
     worksheet.append(["Gap start time", "Gap end time", "Duration minutes", "Reason/source"])
     for gap in summary.get("gaps", []):
@@ -200,6 +301,151 @@ def _write_measurements(worksheet, campaign):
         )
 
 
+def _write_source_file_inventory(worksheet, summary):
+    headers = [
+        "Source file ID", "Filename", "Device ID", "Parsed start", "Parsed end",
+        "Raw rows", "Imported measurement rows", "Detected columns", "Radon unit",
+        "Environmental columns", "Missing values", "Duplicate timestamps",
+        "Nominal interval minutes", "Interval distribution", "Irregular intervals",
+        "Overlap duration minutes", "Overlap timestamp count", "Warnings/errors",
+    ]
+    worksheet.append(headers)
+    for row in summary.get("source_file_inventory", []):
+        worksheet.append([
+            _value(row.get("source_file_id")), _value(row.get("filename")), _value(row.get("device_id")),
+            _datetime_cell(row.get("parsed_start")), _datetime_cell(row.get("parsed_end")),
+            _value(row.get("raw_rows")), _value(row.get("imported_measurement_rows")),
+            _join(row.get("detected_columns")), _value(row.get("radon_unit")),
+            _join(row.get("environmental_columns_available")), _stringify(row.get("missing_values")),
+            _value(row.get("duplicate_timestamps_within_file")), _number(row.get("nominal_sampling_interval_minutes")),
+            _stringify(row.get("sampling_interval_distribution")), _value(row.get("irregular_intervals")),
+            _number(row.get("overlap_duration_minutes")), _value(row.get("overlap_timestamp_count")),
+            _value(row.get("warnings_errors")),
+        ])
+
+
+def _write_canonical_dataset_summary(worksheet, summary):
+    worksheet.append(["Field", "Value"])
+    for key, value in summary.get("canonical_dataset_summary", {}).items():
+        worksheet.append([key, _value(value)])
+
+
+def _write_canonical_hourly_data(worksheet, summary):
+    headers = [
+        "Interval start", "Radon mean", "Radon median", "Radon min", "Radon max",
+        "Radon std", "Radon count", "Temperature mean", "Humidity mean",
+        "Pressure mean", "Completeness ratio", "Quality flags",
+    ]
+    worksheet.append(headers)
+    for row in summary.get("canonical_hourly_data", []):
+        worksheet.append([
+            _datetime_cell(row.get("interval_start")), _number(row.get("radon_mean")),
+            _number(row.get("radon_median")), _number(row.get("radon_min")),
+            _number(row.get("radon_max")), _number(row.get("radon_std")),
+            _value(row.get("radon_count")), _number(row.get("temperature_mean")),
+            _number(row.get("humidity_mean")), _number(row.get("pressure_mean")),
+            _number(row.get("completeness_ratio")), _join(row.get("quality_flags")),
+        ])
+
+
+def _write_quality_flags(worksheet, summary):
+    worksheet.append(["Quality flag", "Count"])
+    for flag, count in summary.get("quality_flag_counts", {}).items():
+        worksheet.append([flag, count])
+
+
+def _write_quality_flag_dictionary(worksheet, summary):
+    worksheet.append(["Quality flag", "Description"])
+    for flag, description in summary.get("quality_flag_dictionary", {}).items():
+        worksheet.append([flag, description])
+
+
+def _write_sampling_diagnostics(worksheet, summary):
+    diagnostics = summary.get("sampling_diagnostics", {})
+    worksheet.append(["Field", "Value"])
+    for key, value in diagnostics.items():
+        if key != "gaps":
+            worksheet.append([key, _stringify(value)])
+
+
+def _write_overlap_conflicts(worksheet, summary):
+    worksheet.append(["UTC timestamp", "Source file IDs", "Values", "Quality flags", "Note"])
+    for row in summary.get("overlap_conflicts", []):
+        worksheet.append([
+            _datetime_cell(row.get("utc_timestamp")), _join(row.get("source_file_ids")),
+            _stringify(row.get("values")), _join(row.get("quality_flags")), _value(row.get("note")),
+        ])
+
+
+def _write_dst_diagnostics(worksheet, summary):
+    worksheet.append(["Timestamp", "Local timestamp", "UTC timestamp", "Timezone", "Flags", "Note"])
+    for row in summary.get("dst_diagnostics", []):
+        worksheet.append([
+            _datetime_cell(row.get("timestamp")), _datetime_cell(row.get("local_timestamp")),
+            _datetime_cell(row.get("utc_timestamp")), _value(row.get("timezone")),
+            _join(row.get("flags")), _value(row.get("note")),
+        ])
+
+
+def _write_resampling_summary(worksheet, summary):
+    worksheet.append(["Field", "Value"])
+    for key, value in summary.get("resampling_summary", {}).items():
+        worksheet.append([key, _stringify(value)])
+
+
+def _write_regime_sensitivity(worksheet, summary):
+    worksheet.append(["Threshold multiplier", "Regime counts", "Regime durations", "Agreement %", "Transitions", "Most sensitive regimes", "Adjusted Rand Index"])
+    for row in summary.get("regime_sensitivity", []):
+        worksheet.append([
+            _number(row.get("threshold_multiplier")), _stringify(row.get("regime_counts")),
+            _stringify(row.get("regime_durations")), _number(row.get("percentage_agreement_with_baseline")),
+            _value(row.get("transitions_count")), _join(row.get("most_sensitive_regimes")),
+            _value(row.get("adjusted_rand_index")),
+        ])
+
+
+def _write_prediction_skill_by_regime(worksheet, summary):
+    worksheet.append(["Forecast horizon", "Model", "Regime/Label", "Samples", "MAE", "RMSE", "Skill score vs persistence", "Small sample warning"])
+    for row in summary.get("prediction_skill_by_regime", []):
+        worksheet.append([
+            _value(row.get("horizon")), _value(row.get("model")), _value(row.get("regime")),
+            _value(row.get("samples")), _number(row.get("mae")), _number(row.get("rmse")),
+            _number(row.get("skill_score_vs_persistence")), _value(row.get("small_sample_warning")),
+        ])
+
+
+def _write_prediction_readiness(worksheet, summary):
+    worksheet.append(["Segment ID", "Regime", "Score", "Category", "Explanation", "Score reduction flags"])
+    for row in summary.get("prediction_readiness", []):
+        worksheet.append([
+            _value(row.get("segment_id")), _value(row.get("regime")),
+            _number(row.get("prediction_readiness_score")), _value(row.get("category")),
+            _value(row.get("explanation")), _join(row.get("score_reduction_flags")),
+        ])
+
+
+def _write_sirem_readiness(worksheet, summary):
+    worksheet.append(["Checklist item", "Available", "Source", "Notes", "Importance for SIREM"])
+    for row in summary.get("sirem_readiness", []):
+        worksheet.append([
+            _value(row.get("item")), _value(row.get("available")), _value(row.get("source")),
+            _value(row.get("notes")), _value(row.get("importance_for_sirem")),
+        ])
+
+
+def _write_reproducibility_config(worksheet, summary):
+    worksheet.append(["Field", "Value"])
+    for key, value in summary.get("reproducibility_config", {}).items():
+        worksheet.append([key, _stringify(value)])
+
+
+def _write_row_reconciliation_summary(worksheet, summary):
+    worksheet.append(["Field", "Value"])
+    reconciliation = summary.get("row_reconciliation_summary") or build_row_reconciliation_summary(summary)
+    for key, value in reconciliation.items():
+        worksheet.append([key, _stringify(value)])
+
+
 def _format_sheet(worksheet):
     worksheet.freeze_panes = "A2"
     if worksheet.max_row and worksheet.max_column:
@@ -222,6 +468,22 @@ def _format_sheet(worksheet):
 def _value(value, fallback="N/A"):
     if value is None or value == "":
         return fallback
+    return value
+
+
+def _join(value):
+    if not value:
+        return "N/A"
+    if isinstance(value, (list, tuple, set)):
+        return ", ".join(str(item) for item in value) or "N/A"
+    return str(value)
+
+
+def _stringify(value):
+    if value is None or value == "":
+        return "N/A"
+    if isinstance(value, (dict, list, tuple, set)):
+        return str(value)
     return value
 
 
@@ -284,9 +546,9 @@ def _display_datetime(value):
 
 
 def _apply_number_formats(worksheet):
-    datetime_headers = {"Start time", "End time", "Gap start time", "Gap end time", "Timestamp"}
-    one_decimal_headers = {"Radon", "Temperature", "Humidity", "Pressure", "Mean radon", "Max radon"}
-    three_decimal_headers = {"Baseline MAE", "Model MAE", "Baseline RMSE", "Model RMSE", "R2"}
+    datetime_headers = {"Start time", "End time", "Gap start time", "Gap end time", "Timestamp", "Parsed start", "Parsed end", "Interval start", "Local timestamp", "UTC timestamp"}
+    one_decimal_headers = {"Radon", "Temperature", "Humidity", "Pressure", "Mean radon", "Max radon", "Actual radon", "Predicted radon", "Absolute error", "Radon mean", "Radon median", "Radon min", "Radon max", "Radon std", "Temperature mean", "Humidity mean", "Pressure mean"}
+    three_decimal_headers = {"Baseline MAE", "Model MAE", "Baseline RMSE", "Model RMSE", "MAE", "RMSE", "R2", "Completeness ratio", "Score", "Skill score vs persistence"}
     percent_headers = {"MAE improvement %", "RMSE improvement %"}
     duration_headers = {"Duration", "Duration minutes"}
 
@@ -315,6 +577,22 @@ def _wrap_long_text(worksheet):
         "Mapped columns",
         "Uploaded file name",
         "Regime/Label",
+        "Prediction Insights",
+        "Detected columns",
+        "Environmental columns",
+        "Missing values",
+        "Interval distribution",
+        "Quality flags",
+        "Description",
+        "Values",
+        "Note",
+        "Notes",
+        "Regime counts",
+        "Regime durations",
+        "Most sensitive regimes",
+        "Explanation",
+        "Score reduction flags",
+        "Value",
     }
     headers = {cell.column: cell.value for cell in worksheet[1]}
     for column_index, header in headers.items():
@@ -325,10 +603,12 @@ def _wrap_long_text(worksheet):
 
 
 def _max_width(sheet_name, column_index):
-    if sheet_name == "Ingestion Diagnostics":
+    if sheet_name in {"Ingestion Diagnostics", "Source File Inventory", "Overlap Conflicts", "Reproducibility Config"}:
         return 60
     if sheet_name == "Measurements" and column_index in (1, 6):
         return 28
     if sheet_name == "Segments" and column_index == 9:
         return 70
+    if sheet_name in {"Prediction Insights", "Quality Flag Dictionary", "SIREM Readiness"}:
+        return 100
     return 45

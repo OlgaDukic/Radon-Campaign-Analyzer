@@ -70,6 +70,28 @@
     <section class="dashboard-panel">
         <div class="panel-title">
             <div>
+                <h3>Paper 1 Research Analysis</h3>
+                <p class="section-subtitle">This exploratory workflow rebuilds research diagnostics for the selected campaign. Outputs are intended for scientific review, not certified radon risk assessment.</p>
+            </div>
+        </div>
+        <form class="paper1-form" method="post" action="{% url 'campaigns:run_campaign_analysis' campaign.pk %}">
+            {% csrf_token %}
+            <div class="form-grid">
+                <label>Timezone {{ paper1_form.timezone }}</label>
+                <label>Resample interval {{ paper1_form.resample }}</label>
+                <label>Gap tolerance {{ paper1_form.gap_tolerance }}</label>
+                <label class="checkbox-row">{{ paper1_form.rebuild_canonical }} Rebuild canonical dataset</label>
+                <label class="checkbox-row">{{ paper1_form.run_sensitivity }} Run regime threshold sensitivity</label>
+                <label class="checkbox-row">{{ paper1_form.export_excel }} Export Excel report</label>
+            </div>
+            <p class="section-subtitle">Rebuilding the canonical dataset will update the latest research diagnostics for this campaign.</p>
+            <button class="button" type="submit">Run full Paper 1 analysis</button>
+        </form>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
                 <h3>Uploaded Files</h3>
                 <p class="section-subtitle">Source files currently attached to the campaign.</p>
             </div>
@@ -89,6 +111,65 @@
         <section class="dashboard-panel">
             <div class="panel-title">
                 <div>
+                    <h3>Latest Paper 1 Analysis Run</h3>
+                    <p class="section-subtitle">Compact audit summary from the latest research workflow output. Timezone audit rows are reproducibility records, not DST errors.</p>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="dashboard-table">
+                    <tbody>
+                        <tr><th>Status</th><td>{{ dashboard.paper1_run_summary.status|default:"N/A" }}</td></tr>
+                        <tr><th>Run timestamp</th><td>{{ dashboard.paper1_run_summary.run_timestamp|default:"N/A" }}</td></tr>
+                        <tr><th>Timezone</th><td>{{ dashboard.paper1_run_summary.timezone|default:"N/A" }}</td></tr>
+                        <tr><th>Resample interval</th><td>{{ dashboard.paper1_run_summary.resample|default:"N/A" }}</td></tr>
+                        <tr><th>Gap tolerance</th><td>{{ dashboard.paper1_run_summary.gap_tolerance|default:"N/A" }}</td></tr>
+                        <tr><th>Rebuild canonical</th><td>{{ dashboard.paper1_run_summary.rebuild_canonical|yesno:"yes,no,N/A" }}</td></tr>
+                        <tr><th>Sensitivity analysis</th><td>{{ dashboard.paper1_run_summary.run_sensitivity|yesno:"yes,no,N/A" }}</td></tr>
+                        <tr><th>Excel export</th><td>{{ dashboard.paper1_run_summary.export_excel|yesno:"yes,no,N/A" }}</td></tr>
+                        <tr><th>Raw imported rows</th><td>{{ dashboard.paper1_run_summary.raw_imported_rows|default:"N/A" }}</td></tr>
+                        <tr><th>Exact duplicate rows removed</th><td>{{ dashboard.paper1_run_summary.exact_duplicate_rows_removed|default:"N/A" }}</td></tr>
+                        <tr><th>Duplicate conflict rows</th><td>{{ dashboard.paper1_run_summary.duplicate_conflict_rows|default:"N/A" }}</td></tr>
+                        <tr><th>Canonical valid rows</th><td>{{ dashboard.paper1_run_summary.canonical_valid_rows|default:"N/A" }}</td></tr>
+                        <tr><th>Canonical hourly rows</th><td>{{ dashboard.paper1_run_summary.canonical_hourly_rows|default:"N/A" }}</td></tr>
+                        <tr><th>Timezone audit rows</th><td>{{ dashboard.paper1_run_summary.timezone_audit_rows|default:"N/A" }}</td></tr>
+                        <tr><th>DST ambiguous count</th><td>{{ dashboard.paper1_run_summary.dst_ambiguous_count|default:"N/A" }}</td></tr>
+                        <tr><th>DST nonexistent count</th><td>{{ dashboard.paper1_run_summary.dst_nonexistent_count|default:"N/A" }}</td></tr>
+                        <tr><th>Sampling irregularities</th><td>{{ dashboard.paper1_run_summary.total_sampling_irregularities|default:"N/A" }}</td></tr>
+                        <tr><th>Short gaps</th><td>{{ dashboard.paper1_run_summary.short_gaps|default:"N/A" }}</td></tr>
+                        <tr><th>Long gaps</th><td>{{ dashboard.paper1_run_summary.long_gaps|default:"N/A" }}</td></tr>
+                        <tr><th>Regimes found</th><td>{{ dashboard.paper1_run_summary.regime_labels_found|join:", "|default:"N/A" }}</td></tr>
+                        <tr><th>Prediction horizons</th><td>{{ dashboard.paper1_run_summary.prediction_horizons_evaluated|join:", "|default:"N/A" }}</td></tr>
+                        <tr><th>Models evaluated</th><td>{{ dashboard.paper1_run_summary.models_evaluated|join:", "|default:"N/A" }}</td></tr>
+                        <tr><th>Small-sample warnings</th><td>{{ dashboard.paper1_run_summary.small_sample_warning_count|default:"N/A" }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="panel-title">
+                <div>
+                    <h3>Paper 1 Output Package</h3>
+                    <p class="section-subtitle">Generated files in the campaign output package. Links are shown only for expected files that exist.</p>
+                </div>
+            </div>
+            <div class="artifact-grid">
+                {% for artifact in dashboard.paper1_artifacts %}
+                    <div class="artifact-row">
+                        <span>{{ artifact.filename }}</span>
+                        {% if artifact.exists %}
+                            <a class="button-link" href="{{ artifact.url }}">{{ artifact.label }}</a>
+                        {% else %}
+                            <span class="na-value">not generated yet</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="panel-title">
+                <div>
                     <h3>Data Quality Summary</h3>
                     <p class="section-subtitle">Import completeness and parser status for uploaded files.</p>
                 </div>
@@ -104,6 +185,80 @@
                     </tbody>
                 </table>
             </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="panel-title">
+                <div>
+                    <h3>Paper 1 Research Diagnostics</h3>
+                    <p class="section-subtitle">Compact reproducibility, canonicalisation, sampling, quality, and readiness outputs for the AranetRn+ case-study workflow.</p>
+                </div>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-card"><div class="card-marker">SRC</div><div><span>Source files inventoried</span><strong>{{ dashboard.source_file_inventory|length }}</strong></div></div>
+                <div class="summary-card"><div class="card-marker">CAN</div><div><span>Canonical valid records</span><strong>{{ dashboard.canonical_dataset_summary.canonical_valid_records|default:"N/A" }}</strong></div></div>
+                <div class="summary-card"><div class="card-marker">QF</div><div><span>Quality flag types</span><strong>{{ dashboard.quality_flag_counts|length }}</strong></div></div>
+                <div class="summary-card"><div class="card-marker">DST</div><div><span>DST/timezone diagnostics</span><strong>{{ dashboard.dst_diagnostics|length }}</strong></div></div>
+                <div class="summary-card"><div class="card-marker">SEN</div><div><span>Sensitivity runs</span><strong>{{ dashboard.regime_sensitivity|length }}</strong></div></div>
+                <div class="summary-card"><div class="card-marker">SIR</div><div><span>SIREM checklist items</span><strong>{{ dashboard.sirem_readiness|length }}</strong></div></div>
+            </div>
+
+            <details class="inline-details">
+                <summary>Source file inventory summary</summary>
+                {% if dashboard.source_file_inventory %}
+                    <div class="table-wrap">
+                        <table class="dashboard-table diagnostic-table">
+                            <thead><tr><th>File</th><th>Start</th><th>End</th><th>Rows</th><th>Imported</th><th>Nominal interval</th><th>Overlaps</th><th>Warnings</th></tr></thead>
+                            <tbody>
+                                {% for item in dashboard.source_file_inventory %}
+                                    <tr>
+                                        <td class="diagnostic-cell">{{ item.filename|default:"N/A" }}</td>
+                                        <td>{{ item.parsed_start|default:"N/A" }}</td>
+                                        <td>{{ item.parsed_end|default:"N/A" }}</td>
+                                        <td>{{ item.raw_rows|default:"N/A" }}</td>
+                                        <td>{{ item.imported_measurement_rows|default:"N/A" }}</td>
+                                        <td>{{ item.nominal_sampling_interval_minutes|default:"N/A" }}</td>
+                                        <td>{{ item.overlap_timestamp_count|default:"N/A" }}</td>
+                                        <td class="diagnostic-cell">{{ item.warnings_errors|default:"" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}<p><span class="na-value">N/A</span></p>{% endif %}
+            </details>
+
+            <details class="inline-details">
+                <summary>Canonical dataset, sampling, overlap, and DST summaries</summary>
+                <div class="table-wrap">
+                    <table class="dashboard-table">
+                        <tbody>
+                            <tr><th>Raw records</th><td>{{ dashboard.canonical_dataset_summary.raw_records|default:"N/A" }}</td></tr>
+                            <tr><th>Unique timestamps</th><td>{{ dashboard.canonical_dataset_summary.unique_timestamps|default:"N/A" }}</td></tr>
+                            <tr><th>Exact duplicates removed</th><td>{{ dashboard.canonical_dataset_summary.exact_duplicates_removed|default:"N/A" }}</td></tr>
+                            <tr><th>Duplicate conflicts</th><td>{{ dashboard.canonical_dataset_summary.conflicts|default:"N/A" }}</td></tr>
+                            <tr><th>Expected sampling interval</th><td>{{ dashboard.sampling_diagnostics.expected_interval_minutes|default:"N/A" }}</td></tr>
+                            <tr><th>Sampling-aware gaps</th><td>{{ dashboard.sampling_diagnostics.gap_count|default:"N/A" }}</td></tr>
+                            <tr><th>Overlap conflict rows</th><td>{{ dashboard.overlap_conflicts|length }}</td></tr>
+                            <tr><th>DST/timezone rows</th><td>{{ dashboard.dst_diagnostics|length }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+
+            <details class="inline-details">
+                <summary>Quality flags, prediction readiness, and SIREM-readiness</summary>
+                <div class="table-wrap">
+                    <table class="dashboard-table">
+                        <thead><tr><th>Output</th><th>Summary</th></tr></thead>
+                        <tbody>
+                            <tr><td>Quality flags</td><td>{% for flag, count in dashboard.quality_flag_counts.items %}{{ flag }}: {{ count }}{% if not forloop.last %}; {% endif %}{% empty %}N/A{% endfor %}</td></tr>
+                            <tr><td>Prediction readiness</td><td>{% for item in dashboard.prediction_readiness %}Segment {{ item.segment_id }}: {{ item.category }} ({{ item.prediction_readiness_score }}){% if not forloop.last %}; {% endif %}{% empty %}N/A{% endfor %}</td></tr>
+                            <tr><td>SIREM readiness</td><td>{% for item in dashboard.sirem_readiness|slice:":6" %}{{ item.item }}: {{ item.available }}{% if not forloop.last %}; {% endif %}{% empty %}N/A{% endfor %}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </details>
         </section>
 
         <section class="dashboard-panel">
@@ -262,6 +417,107 @@
                                         <td>{{ metrics.rmse|default:"N/A" }}</td>
                                     </tr>
                                 {% endfor %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p><span class="na-value">N/A</span></p>
+            {% endif %}
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="panel-title">
+                <div>
+                    <h3>Prediction Performance by Regime</h3>
+                    <p class="section-subtitle">Regime-aware evaluation helps identify whether prediction quality depends on the current radon dynamics, instead of relying only on global model metrics.</p>
+                </div>
+            </div>
+            <div class="insight-box">
+                <h4>Prediction Insights</h4>
+                {% if dashboard.prediction_insights %}
+                    <ul>
+                        {% for insight in dashboard.prediction_insights %}
+                            <li>{{ insight }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p><span class="na-value">N/A</span></p>
+                {% endif %}
+            </div>
+            {% if dashboard.prediction_metrics_by_regime %}
+                <div class="table-wrap">
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Horizon</th>
+                                <th>Model</th>
+                                <th>Regime/label</th>
+                                <th>Samples</th>
+                                <th>MAE</th>
+                                <th>RMSE</th>
+                                <th>MAE improvement</th>
+                                <th>RMSE improvement</th>
+                                <th>Interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in dashboard.prediction_metrics_by_regime %}
+                                <tr>
+                                    <td>{{ row.horizon }}</td>
+                                    <td>{{ row.model }}</td>
+                                    <td>{{ row.regime|default:"N/A" }}</td>
+                                    <td>{{ row.samples|default:"N/A" }}</td>
+                                    <td>{{ row.mae|default:"N/A" }}</td>
+                                    <td>{{ row.rmse|default:"N/A" }}</td>
+                                    <td>{{ row.mae_improvement_display }}</td>
+                                    <td>{{ row.rmse_improvement_display }}</td>
+                                    <td><span class="prediction-badge {{ row.badge.class }}">{{ row.badge.label }}</span></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p><span class="na-value">N/A</span></p>
+            {% endif %}
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="panel-title">
+                <div>
+                    <h3>Prediction Error Analysis</h3>
+                    <p class="section-subtitle">Largest absolute prediction errors across horizons and models, limited to the top 20 rows.</p>
+                </div>
+            </div>
+            <p class="table-caption">This table lists the largest absolute prediction errors so researchers can inspect whether errors cluster by horizon, model, regime, or segment.</p>
+            {% if dashboard.prediction_errors %}
+                <div class="table-wrap">
+                    <table class="dashboard-table error-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Horizon</th>
+                                <th>Model</th>
+                                <th>Actual radon</th>
+                                <th>Predicted radon</th>
+                                <th>Absolute error</th>
+                                <th>Regime/label</th>
+                                <th>Segment ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in dashboard.prediction_errors %}
+                                <tr>
+                                    <td>{{ row.timestamp|default:"N/A" }}</td>
+                                    <td>{{ row.horizon|default:"N/A" }}</td>
+                                    <td>{{ row.model|default:"N/A" }}</td>
+                                    <td>{{ row.actual_radon|default:"N/A" }}</td>
+                                    <td>{{ row.predicted_radon|default:"N/A" }}</td>
+                                    <td class="error-value">{{ row.absolute_error|default:"N/A" }}</td>
+                                    <td><span class="regime-chip">{{ row.regime|default:"N/A" }}</span></td>
+                                    <td>{{ row.segment_id|default:"N/A" }}</td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>

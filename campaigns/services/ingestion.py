@@ -190,6 +190,7 @@ def parse_timestamp(value):
 
 def _file_debug(uploaded_file):
     return {
+        "source_file_id": uploaded_file.id,
         "filename": uploaded_file.original_name or uploaded_file.file.name,
         "detected_sheets": [],
         "raw_rows_read": 0,
@@ -275,7 +276,7 @@ def _parse_sheet(sheet_name, table, uploaded_file):
     measurements = []
     skipped_without_timestamp = 0
     skipped_without_radon = 0
-    for data_row in data_rows:
+    for offset, data_row in enumerate(data_rows, start=header_index + 2):
         row = dict(zip(headers, data_row))
         measured_at = _row_timestamp(row, column_map)
         if not measured_at:
@@ -293,6 +294,10 @@ def _parse_sheet(sheet_name, table, uploaded_file):
                 "humidity_percent": parse_decimal(row.get(column_map.humidity)),
                 "pressure_hpa": parse_decimal(row.get(column_map.pressure)),
                 "source_file": uploaded_file,
+                "source_file_id": uploaded_file.id,
+                "source_file_name": uploaded_file.original_name or uploaded_file.file.name,
+                "original_row_number": offset,
+                "original_timestamp_string": _row_timestamp_string(row, column_map),
             }
         )
 
@@ -351,6 +356,14 @@ def _row_timestamp(row, column_map):
             return parsed
     if column_map.date and column_map.time:
         return parse_timestamp(f"{row.get(column_map.date, '')} {row.get(column_map.time, '')}".strip())
+    return None
+
+
+def _row_timestamp_string(row, column_map):
+    if column_map.timestamp:
+        return row.get(column_map.timestamp)
+    if column_map.date and column_map.time:
+        return f"{row.get(column_map.date, '')} {row.get(column_map.time, '')}".strip()
     return None
 
 
