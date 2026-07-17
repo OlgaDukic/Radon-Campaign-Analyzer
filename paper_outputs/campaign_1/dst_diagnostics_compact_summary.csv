@@ -1,0 +1,7 @@
+field,value
+timezone_audit_rows,36804
+dst_ambiguous_count,12
+dst_nonexistent_count,1
+dst_transition_related_count,13
+dst_problem_count,13
+dst_notes,Timezone audit rows document assumptions for reproducible ordering and are not all DST problems. Problem counts include ambiguous/nonexistent local timestamps and timestamp parse warnings.

@@ -1,0 +1,91 @@
+[
+  {
+    "id": "EQ-2016-1a",
+    "source_document": "phd thesis_Simona Mancini.pdf",
+    "page": 63,
+    "equation_number": "Eq.(1)",
+    "original_notation": "Cus = Nus / Vus * lambda_Rn",
+    "latex": "C_{us} = (N_{us}/V_{us})\\lambda_{Rn}",
+    "status": "EXTRACTED",
+    "explicit_sirem": true,
+    "validity": "steady-state dNus/dt=0"
+  },
+  {
+    "id": "EQ-2016-1b",
+    "source_document": "phd thesis_Simona Mancini.pdf",
+    "page": 63,
+    "equation_number": "Eq.(1)",
+    "original_notation": "Cds = Nds / Vds * lambda_Rn",
+    "latex": "C_{ds} = (N_{ds}/V_{ds})\\lambda_{Rn}",
+    "status": "EXTRACTED",
+    "explicit_sirem": true,
+    "validity": "steady-state dNds/dt=0"
+  },
+  {
+    "id": "EQ-2016-1c",
+    "source_document": "phd thesis_Simona Mancini.pdf",
+    "page": 63,
+    "equation_number": "Eq.(1)",
+    "original_notation": "Cbm = Nbm / Vbm * lambda_Rn",
+    "latex": "C_{bm} = (N_{bm}/V_{bm})\\lambda_{Rn}",
+    "status": "EXTRACTED",
+    "explicit_sirem": true,
+    "validity": "steady-state dNbm/dt=0"
+  },
+  {
+    "id": "EQ-2016-1d",
+    "source_document": "phd thesis_Simona Mancini.pdf",
+    "page": 63,
+    "equation_number": "Eq.(1)",
+    "original_notation": "qi,j = Vi * lambda_i,j",
+    "latex": "q_{i,j} = V_i\\lambda_{i,j}",
+    "status": "EXTRACTED",
+    "explicit_sirem": true,
+    "validity": "air exchange relation"
+  },
+  {
+    "id": "EQ-2016-2",
+    "source_document": "phd thesis_Simona Mancini.pdf",
+    "page": 64,
+    "equation_number": "Eq.(2)",
+    "original_notation": "Ci = Ni / Vi * lambda_Rn = f(Cus, Cds, Cbm, Ce, qi,j)",
+    "latex": "C_i = (N_i/V_i)\\lambda_{Rn} = f(C_{us}, C_{ds}, C_{bm}, C_e, q_{i,j})",
+    "status": "EXTRACTED",
+    "explicit_sirem": true,
+    "validity": "steady-state dNi/dt=0"
+  },
+  {
+    "id": "EQ-2016-3",
+    "source_document": "phd thesis_Simona Mancini.pdf",
+    "page": 65,
+    "equation_number": "Eq.(3)",
+    "original_notation": "single expression for Ci with building-material and soil terms",
+    "latex": "SOURCE_REVIEW_REQUIRED",
+    "status": "SOURCE_REVIEW_REQUIRED",
+    "explicit_sirem": true,
+    "validity": "well-mixed single-zone steady-state"
+  },
+  {
+    "id": "EQ-2022-1",
+    "source_document": "ijerph-19-06056-v2.pdf",
+    "page": "4-5",
+    "equation_number": "Eq.(1)",
+    "original_notation": "CeqD = ED / lambda",
+    "latex": "C_{eqD} = E_D / \\lambda",
+    "status": "EXTRACTED",
+    "explicit_sirem": "related",
+    "validity": "closed room diffusion equilibrium"
+  },
+  {
+    "id": "EQ-2022-2",
+    "source_document": "ijerph-19-06056-v2.pdf",
+    "page": 5,
+    "equation_number": "Eq.(2)",
+    "original_notation": "Ci = Ni / Vi * lambda_Rn = f(CUS, Cds, Cbm, Ce, qi,j)",
+    "latex": "C_i = (N_i/V_i)\\lambda_{Rn} = f(C_{US}, C_{ds}, C_{bm}, C_e, q_{i,j})",
+    "status": "EXTRACTED",
+    "explicit_sirem": "related",
+    "validity": "well-mixed single-zone steady-state"
+  }
+]
+

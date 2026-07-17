@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 
+from campaigns.services.analysis_profiles import parse_overrides
 from campaigns.services.paper1_analysis_runner import run_paper1_analysis
 
 
@@ -15,6 +16,8 @@ class Command(BaseCommand):
         parser.add_argument("--run-sensitivity", action="store_true")
         parser.add_argument("--export-excel", action="store_true")
         parser.add_argument("--output-dir", default=".")
+        parser.add_argument("--profile", default="default_radon_hourly")
+        parser.add_argument("--config-override", action="append", default=[])
 
     def handle(self, *args, **options):
         result = run_paper1_analysis(
@@ -26,6 +29,8 @@ class Command(BaseCommand):
             run_sensitivity=options["run_sensitivity"],
             export_excel=options["export_excel"],
             output_dir=options["output_dir"],
+            profile=options["profile"],
+            config_overrides=parse_overrides(options["config_override"]),
             requested_by="management_command",
         )
         if result["status"] != "success":

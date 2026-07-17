@@ -1,18 +1,209 @@
 {% extends "campaigns/base.html" %}
+{% load static %}
 
 {% block content %}
-<h2>Campaigns</h2>
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-home1">
 
-{% if campaigns %}
-    <ul>
-        {% for campaign in campaigns %}
-            <li>
-                <a href="{% url 'campaigns:campaign_detail' campaign.pk %}">{{ campaign.name }}</a>
-                {% if campaign.location %} - {{ campaign.location }}{% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p>No campaigns have been created yet.</p>
-{% endif %}
+<div class="research-dashboard campaign-home">
+    <header class="dashboard-hero home-hero">
+        <div>
+            <p class="app-kicker">Radon Campaign Analyzer</p>
+            <h2>Campaign Home</h2>
+            <p class="hero-copy">Research prototype workspace for indoor radon monitoring campaigns, regime analysis, prediction evaluation and reproducible report exports.</p>
+            <p class="prototype-note">Exploratory research software only. It is not a certified radon risk assessment, medical, legal or regulatory decision tool.</p>
+        </div>
+        <div class="actions home-actions">
+            <a class="button-primary" href="{% url 'campaigns:campaign_create' %}">Create campaign</a>
+            <a class="button-secondary" href="#compare-campaigns">Compare campaigns</a>
+        </div>
+    </header>
+
+    <section class="summary-grid home-summary-grid" aria-label="Campaign workspace summary">
+        <article class="summary-card">
+            <span class="card-marker">C</span>
+            <div>
+                <span>Total campaigns</span>
+                <strong>{{ home_stats.campaign_count }}</strong>
+            </div>
+        </article>
+        <article class="summary-card">
+            <span class="card-marker">R</span>
+            <div>
+                <span>Completed reports</span>
+                <strong>{{ home_stats.complete_count }}</strong>
+            </div>
+        </article>
+        <article class="summary-card">
+            <span class="card-marker">F</span>
+            <div>
+                <span>Uploaded files</span>
+                <strong>{{ home_stats.uploaded_file_count }}</strong>
+            </div>
+        </article>
+        <article class="summary-card">
+            <span class="card-marker">M</span>
+            <div>
+                <span>Measurements</span>
+                <strong>{{ home_stats.measurement_count }}</strong>
+            </div>
+        </article>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Campaigns</h3>
+                <p class="section-subtitle">Open a campaign dashboard, inspect report status and continue analysis from one place.</p>
+            </div>
+            <a class="button-secondary button-small" href="{% url 'campaigns:campaign_create' %}">Create campaign</a>
+        </div>
+
+        {% if campaign_rows %}
+            <div class="campaign-card-grid">
+                {% for row in campaign_rows %}
+                    <article class="campaign-card">
+                        <div class="campaign-card-top">
+                            <div>
+                                <span class="status-badge status-{{ row.report_level }}">{{ row.report_status }}</span>
+                                <h3>{{ row.campaign.name }}</h3>
+                            </div>
+                            <span class="campaign-id">#{{ row.campaign.id }}</span>
+                        </div>
+                        <dl class="campaign-card-meta">
+                            <div>
+                                <dt>Location</dt>
+                                <dd>{{ row.campaign.location|default:"N/A" }}</dd>
+                            </div>
+                            <div>
+                                <dt>Measurements</dt>
+                                <dd>{{ row.measurement_count }}</dd>
+                            </div>
+                            <div>
+                                <dt>Time range</dt>
+                                <dd>{{ row.date_range }}</dd>
+                            </div>
+                            <div>
+                                <dt>Mean / max radon</dt>
+                                <dd>{{ row.mean_radon }} / {{ row.max_radon }}</dd>
+                            </div>
+                            <div>
+                                <dt>Files</dt>
+                                <dd>{{ row.uploaded_file_count }}</dd>
+                            </div>
+                            <div>
+                                <dt>Major gaps</dt>
+                                <dd>{{ row.major_gaps }}</dd>
+                            </div>
+                            <div>
+                                <dt>Profile</dt>
+                                <dd><span class="status-badge status-{{ row.profile_level }}">{{ row.profile_badge }}</span></dd>
+                            </div>
+                            <div>
+                                <dt>Updated</dt>
+                                <dd>{{ row.updated_at|date:"Y-m-d H:i" }}</dd>
+                            </div>
+                        </dl>
+                        <div class="campaign-card-actions">
+                            <a class="button-primary button-small" href="{% url 'campaigns:campaign_detail' row.campaign.pk %}">Open dashboard</a>
+                            <a class="button-tertiary button-small" href="{% url 'campaigns:campaign_reports' row.campaign.pk %}">Reports</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <h3>No campaigns yet</h3>
+                <p>Create a campaign, upload monitoring files and run the analysis pipeline to generate a research dashboard.</p>
+                <a class="button-primary" href="{% url 'campaigns:campaign_create' %}">Create first campaign</a>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-panel" id="compare-campaigns">
+        <div class="panel-title">
+            <div>
+                <h3>Compare Campaigns</h3>
+                <p class="section-subtitle">Select two to four completed campaigns. Normalised values are calculated for display only.</p>
+            </div>
+        </div>
+        <form method="get" class="comparison-selector">
+            <div class="comparison-options">
+                {% for campaign in completed_campaigns %}
+                    <label class="comparison-option">
+                        <input type="checkbox" name="compare" value="{{ campaign.id }}" {% if campaign.id in selected_compare_ids %}checked{% endif %}>
+                        <span>{{ campaign.name }}</span>
+                    </label>
+                {% empty %}
+                    <p><span class="na-value">No completed campaigns are available for comparison.</span></p>
+                {% endfor %}
+            </div>
+            <div class="actions comparison-actions">
+                <button class="button-primary" type="submit">Compare selected</button>
+                <a class="button-tertiary" href="{% url 'campaigns:campaign_list' %}">Clear comparison</a>
+            </div>
+        </form>
+        {% if comparison_warning %}
+            <p class="warning-disclaimer">Select between two and four completed campaigns for comparison.</p>
+        {% endif %}
+        <p class="warning-disclaimer">Campaigns may use different sensors, sampling intervals, locations and monitoring periods. Comparison values are descriptive and should not be interpreted as direct regulatory or causal conclusions.</p>
+        {% if profile_version_mismatch or threshold_mismatch %}
+            <p class="warning-disclaimer">Selected campaigns use different analysis-profile versions or threshold definitions; compare profile-derived categories cautiously.</p>
+        {% endif %}
+
+        {% if comparison_rows %}
+            <div class="selected-campaign-grid">
+                {% for row in comparison_rows %}
+                    <article class="summary-card metric-card">
+                        <span class="metric-icon">Selected</span>
+                        <div>
+                            <span>{{ row.location }}</span>
+                            <strong>{{ row.campaign.name }}</strong>
+                            <small>Profile: {{ row.profile_name }} {{ row.profile_version }}</small>
+                            <div class="actions">
+                                <a class="button-secondary button-small" href="{% url 'campaigns:campaign_detail' row.campaign.pk %}">Open campaign</a>
+                                <a class="button-tertiary button-small" href="?{% for selected_id in selected_compare_ids %}{% if selected_id != row.campaign.id %}compare={{ selected_id }}&{% endif %}{% endfor %}">Remove</a>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% if comparison_ready %}
+            <div class="table-wrap comparison-table-wrap">
+                <table class="dashboard-table comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            {% for row in comparison_rows %}<th>{{ row.campaign.name }}</th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><th>Location</th>{% for row in comparison_rows %}<td>{{ row.location }}</td>{% endfor %}</tr>
+                        <tr><th>Sensor/device</th>{% for row in comparison_rows %}<td>{{ row.sensor }}</td>{% endfor %}</tr>
+                        <tr><th>Start</th>{% for row in comparison_rows %}<td>{{ row.start }}</td>{% endfor %}</tr>
+                        <tr><th>End</th>{% for row in comparison_rows %}<td>{{ row.end }}</td>{% endfor %}</tr>
+                        <tr><th>Duration</th>{% for row in comparison_rows %}<td>{{ row.duration }}</td>{% endfor %}</tr>
+                        <tr><th>Imported measurements</th>{% for row in comparison_rows %}<td>{{ row.measurement_count }}</td>{% endfor %}</tr>
+                        <tr><th>Mean radon</th>{% for row in comparison_rows %}<td>{{ row.mean_radon }}</td>{% endfor %}</tr>
+                        <tr><th>Maximum radon</th>{% for row in comparison_rows %}<td>{{ row.max_radon }}</td>{% endfor %}</tr>
+                        <tr><th>Elevated/high</th>{% for row in comparison_rows %}<td>{{ row.elevated_high_percent }}</td>{% endfor %}</tr>
+                        <tr><th>Major/long gaps</th>{% for row in comparison_rows %}<td>{{ row.major_gaps }}</td>{% endfor %}</tr>
+                        <tr><th>Final valid physical episodes</th>{% for row in comparison_rows %}<td>{{ row.physical_episodes }}</td>{% endfor %}</tr>
+                        <tr><th>Temperature coverage</th>{% for row in comparison_rows %}<td>{{ row.temperature_coverage }}</td>{% endfor %}</tr>
+                        <tr><th>Relative-humidity coverage</th>{% for row in comparison_rows %}<td>{{ row.humidity_coverage }}</td>{% endfor %}</tr>
+                        <tr><th>Pressure coverage</th>{% for row in comparison_rows %}<td>{{ row.pressure_coverage }}</td>{% endfor %}</tr>
+                        <tr><th>CO2 coverage</th>{% for row in comparison_rows %}<td>{{ row.co2_coverage }}</td>{% endfor %}</tr>
+                        <tr><th>Profile status/version</th>{% for row in comparison_rows %}<td>{{ row.profile_status }} / {{ row.profile_version }}</td>{% endfor %}</tr>
+                        <tr><th>Major gaps per 30 measurement days</th>{% for row in comparison_rows %}<td>{{ row.major_gaps_per_30_days }}</td>{% endfor %}</tr>
+                        <tr><th>Physical episodes per 30 measurement days</th>{% for row in comparison_rows %}<td>{{ row.physical_episodes_per_30_days }}</td>{% endfor %}</tr>
+                        <tr><th>Data-quality events per 1,000 measurements</th>{% for row in comparison_rows %}<td>{{ row.data_quality_events_per_1000 }}</td>{% endfor %}</tr>
+                    </tbody>
+                </table>
+            </div>
+        {% elif comparison_rows %}
+            <p><span class="na-value">Select at least two completed campaigns to show the comparison table.</span></p>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}

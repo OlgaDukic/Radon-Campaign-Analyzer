@@ -1,0 +1,25 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-ux4">
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            <p class="app-kicker">Add Files</p>
+            <h2>{{ campaign.name }}</h2>
+            <p>Upload CSV or Excel monitoring exports for this campaign.</p>
+        </div>
+        <div class="actions"><a class="button-link" href="{% url 'campaigns:campaign_detail' campaign.pk %}">Back to Overview</a></div>
+    </header>
+    {% include "campaigns/_campaign_nav.html" %}
+    <section class="dashboard-panel compact-form-panel">
+        <h3>Upload Monitoring File</h3>
+        <form method="post" action="{% url 'campaigns:upload_file' campaign.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button class="button" type="submit">Upload file</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

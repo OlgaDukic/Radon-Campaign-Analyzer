@@ -1,0 +1,7 @@
+Experiment,Horizon,Open-loop RMSE,Open-loop reduced transition MAE,Relative MAE reduction,Relative RMSE reduction,Sequential RMSE,Sequential reduced Kalman MAE
+Experiment A,1h,55.818,46.694,71.971,66.344,18.786,13.088
+Experiment A,3h,56.901,47.924,65.777,56.885,24.533,16.401
+Experiment A,6h,60.394,51.055,51.613,36.027,38.636,24.704
+Experiment B,1h,68.678,60.558,76.903,68.501,21.633,13.987
+Experiment B,3h,69.636,61.761,70.009,59.405,28.269,18.523
+Experiment B,6h,71.891,64.41,58.284,46.675,38.336,26.869

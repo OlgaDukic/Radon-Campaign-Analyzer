@@ -74,16 +74,29 @@ def build_dst_compact_summary(summary):
 
 def build_sampling_gaps_compact_summary(summary):
     diagnostics = summary.get("sampling_diagnostics") or {}
+    continuity_summary = (summary.get("time_continuity") or {}).get("summary") or {}
+    interval_counts = continuity_summary.get("interval_class_counts") or {}
+    short_gaps = _integer(interval_counts.get("SHORT_GAP")) or _integer(diagnostics.get("short_gap_count"))
+    moderate_gaps = _integer(interval_counts.get("MODERATE_GAP"))
+    long_gaps = _integer(interval_counts.get("LONG_GAP")) or _integer(diagnostics.get("long_gap_count"))
+    minor_deviations = _integer(interval_counts.get("MINOR_INTERVAL_DEVIATION"))
+    total_irregularities = (
+        short_gaps + moderate_gaps + long_gaps + minor_deviations
+        if interval_counts
+        else _integer(diagnostics.get("irregular_interval_count"))
+    )
     return {
-        "total_sampling_irregularities": _integer(diagnostics.get("irregular_interval_count")),
-        "short_gaps": _integer(diagnostics.get("short_gap_count")),
-        "long_gaps": _integer(diagnostics.get("long_gap_count")),
+        "total_sampling_irregularities": total_irregularities,
+        "minor_interval_deviations": minor_deviations,
+        "short_gaps": short_gaps,
+        "moderate_gaps": moderate_gaps,
+        "long_gaps": long_gaps,
         "inter_file_gaps": "N/A",
         "dst_related_gaps": "N/A",
-        "prediction_breaking_gaps": _integer(diagnostics.get("long_gap_count")),
+        "prediction_breaking_gaps": short_gaps + moderate_gaps + long_gaps,
         "notes": (
-            "Sampling gaps are detected with the configured tolerance multiplier. Inter-file and DST-related "
-            "gap attribution is not separately classified by the current prototype."
+            "Compact counts use the central time-continuity classification when available. Inter-file and "
+            "DST-related gap attribution is not separately classified by the current prototype."
         ),
     }
 
@@ -119,6 +132,19 @@ def write_paper_output_package(campaign, report, output_dir, excel_path=None, co
     created.append(_write_kv(output_dir / "row_reconciliation_summary.csv", summary.get("row_reconciliation_summary", {})))
     created.append(_write_kv(output_dir / "dst_diagnostics_compact_summary.csv", summary.get("dst_diagnostics_compact_summary", {})))
     created.append(_write_kv(output_dir / "sampling_gaps_compact_summary.csv", summary.get("sampling_gaps_compact_summary", {})))
+    created.append(_write_rows(output_dir / "measurement_level_regimes_v2.csv", summary.get("measurement_regimes_v2", [])))
+    created.append(_write_rows(output_dir / "episodes_v2.csv", summary.get("episodes", [])))
+    created.append(_write_regime_confidence_summary(output_dir / "regime_confidence_summary_v2.csv", summary.get("regime_confidence_summary", {})))
+    created.append(_write_rows(output_dir / "dynamic_sensitivity_summary_v2.csv", summary.get("dynamic_sensitivity", [])))
+    created.append(_write_rows(output_dir / "important_episodes_top20_v2.csv", summary.get("important_episodes", [])))
+    created.append(_write_rows(output_dir / "feature_distribution_diagnostics_v2.csv", summary.get("feature_distribution_diagnostics", [])))
+    created.append(_write_rows(output_dir / "sudden_event_audit_v2.csv", summary.get("sudden_event_audit", [])))
+    created.append(_write_rows(output_dir / "episode_reason_summary_v2.csv", summary.get("episode_reason_summary", [])))
+    created.append(_write_rows(output_dir / "elevated_period_phase_table_v2.csv", summary.get("elevated_period_phase_table", [])))
+    created.append(_write_rows(output_dir / "adaptive_recommendations_v2.csv", summary.get("adaptive_recommendations", [])))
+    created.append(_write_kv(output_dir / "profile_applicability_v2.csv", summary.get("profile_applicability", {})))
+    created.append(_write_kv(output_dir / "standardized_campaign_summary_v2.csv", summary.get("standardized_campaign_summary", {})))
+    created.append(_write_rows(output_dir / "transition_merge_audit_v2.csv", summary.get("transition_merge_audit", [])))
 
     validation_path = output_dir / "paper1_validation_report.md"
     validation_path.write_text(
@@ -140,6 +166,11 @@ def build_validation_report(campaign, report, summary, excel_path=None, command_
     reconciliation = summary.get("row_reconciliation_summary", {})
     dst_summary = summary.get("dst_diagnostics_compact_summary", {})
     gap_summary = summary.get("sampling_gaps_compact_summary", {})
+    confidence = summary.get("regime_confidence_summary", {})
+    applicability = summary.get("profile_applicability", {})
+    standardized = summary.get("standardized_campaign_summary", {})
+    episodes = summary.get("episodes") or []
+    episode_durations = sorted([episode.get("duration_hours") for episode in episodes if episode.get("duration_hours") is not None])
     config = summary.get("analysis_config", {})
     repro = summary.get("reproducibility_config", {})
     prediction_metrics = summary.get("prediction_metrics") or {}
@@ -189,6 +220,26 @@ def build_validation_report(campaign, report, summary, excel_path=None, command_
             f"- Models evaluated: {', '.join(models) or 'N/A'}",
             "- Prediction evaluation policy: chronological train/test split; training observations precede test observations in time.",
             f"- Small-sample warnings: {small_warnings}",
+            "",
+            "## Regime Analysis v2",
+            f"- Concentration-level distribution: {_clean(summary.get('concentration_level_counts') or {})}",
+            f"- Candidate-state distribution: {_clean(summary.get('candidate_dynamic_state_counts') or {})}",
+            f"- Confirmed-state distribution: {_clean(summary.get('confirmed_dynamic_state_counts') or summary.get('dynamic_state_counts') or {})}",
+            f"- Episode count by type: {_clean(summary.get('episode_type_counts') or {})}",
+            f"- Median episode duration hours: {_median(episode_durations)}",
+            f"- Maximum episode duration hours: {max(episode_durations) if episode_durations else 'N/A'}",
+            f"- Confidence distribution: {_clean(confidence.get('confidence_category_counts') or {})}",
+            f"- Low-confidence reasons: {_clean(confidence.get('reason_code_counts') or {})}",
+            f"- Dynamic-sensitivity agreement: {_dynamic_sensitivity_agreement(summary.get('dynamic_sensitivity') or [])}",
+            f"- Regime algorithm version: {(summary.get('regime_parameters') or {}).get('algorithm_version', 'N/A')}",
+            "",
+            "## Portability",
+            f"- Selected profile: {applicability.get('profile_name', 'N/A')} {applicability.get('profile_version', '')}",
+            f"- Compatibility status: {applicability.get('status', 'N/A')}",
+            f"- Compatibility warnings: {_clean(applicability.get('reason_codes') or [])}",
+            f"- Adaptive recommendations: {_clean(summary.get('adaptive_recommendations') or [])}",
+            f"- Transition merges performed: {len(summary.get('transition_merge_audit') or [])}",
+            f"- Normalized episode rates: {_clean(standardized.get('episode_counts_per_1000_hours') or {})}",
             "",
             "## Excel and Output Validation",
             f"- Excel workbook: {excel_path or 'N/A'}",
@@ -248,6 +299,22 @@ def _write_kv(path, mapping, key_name="field", value_name="value"):
     )
 
 
+def _write_regime_confidence_summary(path, summary):
+    rows = []
+    summary = summary or {}
+    for key, value in (summary.get("confidence_category_counts") or {}).items():
+        rows.append({"section": "confidence_category_counts", "key": key, "value": value})
+    for key, value in (summary.get("confidence_distribution_by_dynamic_state") or {}).items():
+        rows.append({"section": "confidence_distribution_by_dynamic_state", "key": key, "value": value})
+    for key, value in (summary.get("confidence_distribution_by_episode_type") or {}).items():
+        rows.append({"section": "confidence_distribution_by_episode_type", "key": key, "value": value})
+    for key, value in (summary.get("reason_code_counts") or {}).items():
+        rows.append({"section": "reason_code_counts", "key": key, "value": value})
+    rows.append({"section": "low_confidence_row_count", "key": "rows", "value": summary.get("low_confidence_row_count", 0)})
+    rows.append({"section": "low_confidence_episode_count", "key": "episodes", "value": summary.get("low_confidence_episode_count", 0)})
+    return _write_rows(path, rows, ["section", "key", "value"])
+
+
 def _headers_for(rows):
     headers = []
     for row in rows:
@@ -263,6 +330,25 @@ def _clean(value):
     if isinstance(value, (dict, list, tuple, set)):
         return json.dumps(value, ensure_ascii=False, default=str)
     return value
+
+
+def _median(values):
+    if not values:
+        return "N/A"
+    middle = len(values) // 2
+    if len(values) % 2:
+        return values[middle]
+    return round((values[middle - 1] + values[middle]) / 2, 3)
+
+
+def _dynamic_sensitivity_agreement(rows):
+    if not rows:
+        return "N/A"
+    values = [
+        f"{row.get('parameter_set_identifier', 'parameter_set')}: {row.get('agreement_with_baseline_percent', 'N/A')}%"
+        for row in rows
+    ]
+    return "; ".join(values)
 
 
 def _integer(value):

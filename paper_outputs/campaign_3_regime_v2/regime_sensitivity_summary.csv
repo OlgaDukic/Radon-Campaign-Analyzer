@@ -1,0 +1,6 @@
+threshold_multiplier,regime_counts,regime_durations,percentage_agreement_with_baseline,transitions_count,most_sensitive_regimes,adjusted_rand_index
+0.8,"{""high_episode"": 24, ""stable_elevated"": 157, ""stable_low"": 1402}","{""high_episode"": 24, ""stable_elevated"": 157, ""stable_low"": 1402}",97.85,42,"[""stable_elevated"", ""stable_low""]",N/A
+0.9,"{""high_episode"": 4, ""stable_elevated"": 170, ""stable_low"": 1409}","{""high_episode"": 4, ""stable_elevated"": 170, ""stable_low"": 1409}",99.56,22,"[""stable_elevated"", ""stable_low""]",N/A
+1.0,"{""stable_elevated"": 171, ""stable_low"": 1412}","{""stable_elevated"": 171, ""stable_low"": 1412}",100.0,12,[],N/A
+1.1,"{""stable_elevated"": 165, ""stable_low"": 1418}","{""stable_elevated"": 165, ""stable_low"": 1418}",99.62,10,"[""stable_elevated""]",N/A
+1.2,"{""stable_elevated"": 159, ""stable_low"": 1424}","{""stable_elevated"": 159, ""stable_low"": 1424}",99.24,12,"[""stable_elevated""]",N/A

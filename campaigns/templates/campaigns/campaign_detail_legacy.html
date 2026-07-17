@@ -1,0 +1,174 @@
+{# Legacy monolithic campaign detail template retained temporarily as a reference. The active Overview uses campaign_overview.html. #}
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}">
+
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            <p class="app-kicker">Radon Campaign Analyzer</p>
+            <h2>{{ campaign.name }}</h2>
+            {% if campaign.description %}<p>{{ campaign.description }}</p>{% endif %}
+            <div class="campaign-meta">
+                <span class="meta-pill">Location: {{ campaign.location|default:"N/A" }}</span>
+                <span class="meta-pill">Planned dates: {{ campaign.start_date|default:"unknown" }} to {{ campaign.end_date|default:"unknown" }}</span>
+                <span class="status-pill">Report: {{ dashboard.report_meta.status }}</span>
+                <span class="meta-pill">Analysis: {{ dashboard.report_meta.timestamp }}</span>
+                <span class="meta-pill">Algorithm: {{ dashboard.report_meta.algorithm_version }}</span>
+                <span class="meta-pill">Profile: {{ dashboard.report_meta.profile_name }} {{ dashboard.report_meta.profile_version }}</span>
+            </div>
+        </div>
+        <div class="actions">
+            <a class="button-link" href="{% url 'campaigns:campaign_list' %}">Back to campaigns</a>
+            <a class="button-link" href="{% url 'campaigns:campaign_create' %}">Create campaign</a>
+            <a class="button-link" href="{% url 'campaigns:campaign_regimes' campaign.pk %}">View Regimes & Episodes</a>
+            <a class="button-link" href="{% url 'campaigns:campaign_quality' campaign.pk %}">View Data Quality</a>
+            <form method="post" action="{% url 'campaigns:run_analysis' campaign.pk %}">
+                {% csrf_token %}
+                <button type="submit">Run analysis</button>
+            </form>
+            {% if latest_report %}
+                <a class="button-secondary" href="{{ export_excel_url }}?mode=compact">Download Compact Report</a>
+                <a class="button-secondary" href="{{ export_excel_url }}">Download Full Audit Report</a>
+                <a class="button-link" href="{% url 'campaigns:campaign_reports' campaign.pk %}">View Reports</a>
+            {% endif %}
+        </div>
+    </header>
+
+    {% include "campaigns/_campaign_nav.html" with active_section="overview" %}
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Overview</h3>
+                <p class="section-subtitle">Concise campaign status for large research campaigns. Full scientific detail is available in the section pages and exports.</p>
+            </div>
+        </div>
+        {% include "campaigns/_summary_cards.html" with cards=dashboard.cards %}
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Radon Time Series</h3>
+                <p class="section-subtitle">Lazy-loaded, peak-preserving chart sample. Full measurement records are not embedded in this page.</p>
+            </div>
+        </div>
+        {% if dashboard.time_series.has_data %}
+            <svg id="radon-time-series-chart" class="line-chart" viewBox="0 0 700 220" role="img" aria-label="Radon time series line chart">
+                <line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line>
+                <line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line>
+                <text x="350" y="112" text-anchor="middle" fill="#617182">Loading chart data...</text>
+            </svg>
+            <p id="radon-chart-caption" class="muted">Range: {{ dashboard.time_series.min }} to {{ dashboard.time_series.max }} Bq/m3</p>
+        {% else %}
+            <p><span class="na-value">N/A</span></p>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Key Warnings</h3>
+                <p class="section-subtitle">High-priority review notes. These are research diagnostics, not regulatory conclusions.</p>
+            </div>
+        </div>
+        {% if dashboard.warnings %}
+            <div class="warning-list">
+                {% for warning in dashboard.warnings %}
+                    <div class="warning-item {{ warning.level }}">{{ warning.text }}</div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p><span class="na-value">No high-priority warnings detected.</span></p>
+        {% endif %}
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Important Episodes</h3>
+                <p class="section-subtitle">Top 10 episodes by maximum radon. Use Regimes & Episodes for filtered, paginated episode review.</p>
+            </div>
+        </div>
+        {% if dashboard.important_episodes %}
+            <div class="table-wrap">
+                <table class="dashboard-table">
+                    <thead><tr><th>Type</th><th>Start</th><th>End</th><th>Duration h</th><th>Max radon</th><th>Confidence</th></tr></thead>
+                    <tbody>
+                        {% for episode in dashboard.important_episodes %}
+                            <tr>
+                                <td>{{ episode.episode_type|default:"N/A" }}</td>
+                                <td>{{ episode.start|default:"N/A" }}</td>
+                                <td>{{ episode.end|default:"N/A" }}</td>
+                                <td>{{ episode.duration_hours|default:"N/A" }}</td>
+                                <td>{{ episode.max_radon|default:"N/A" }}</td>
+                                <td>{% if episode.confidence_category %}{{ episode.confidence_category }}{% elif episode.confidence %}{{ episode.confidence }}{% else %}N/A{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if dashboard.important_episode_total > 10 %}
+                <p class="table-caption">Showing 10 of {{ dashboard.important_episode_total }} episodes. <a href="{% url 'campaigns:campaign_regimes' campaign.pk %}">View all episodes</a>.</p>
+            {% endif %}
+        {% else %}
+            <p><span class="na-value">N/A</span></p>
+        {% endif %}
+    </section>
+
+    <details class="dashboard-panel technical-panel">
+        <summary>Paper 1 Research Analysis controls</summary>
+        <p class="section-subtitle">Exploratory research workflow controls. Running analysis redirects back to this lightweight overview.</p>
+        <form class="upload-form" method="post" action="{% url 'campaigns:upload_file' campaign.pk %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ upload_form.as_p }}
+            <button class="button" type="submit">Upload file</button>
+        </form>
+        <form class="paper1-form" method="post" action="{% url 'campaigns:run_campaign_analysis' campaign.pk %}">
+            {% csrf_token %}
+            <div class="form-grid">
+                <label>Timezone {{ paper1_form.timezone }}</label>
+                <label>Resample interval {{ paper1_form.resample }}</label>
+                <label>Gap tolerance {{ paper1_form.gap_tolerance }}</label>
+                <label class="checkbox-row">{{ paper1_form.rebuild_canonical }} Rebuild canonical dataset</label>
+                <label class="checkbox-row">{{ paper1_form.run_sensitivity }} Run regime threshold sensitivity</label>
+                <label class="checkbox-row">{{ paper1_form.export_excel }} Export Excel report</label>
+            </div>
+            <button class="button" type="submit">Run full Paper 1 analysis</button>
+        </form>
+    </details>
+</div>
+
+{% if latest_report and dashboard.time_series.has_data %}
+<script>
+(function () {
+    const chart = document.getElementById("radon-time-series-chart");
+    const caption = document.getElementById("radon-chart-caption");
+    fetch("{% url 'campaigns:campaign_chart_data' campaign.pk %}?max_points=2000")
+        .then((response) => response.json())
+        .then((payload) => {
+            const values = payload.points || [];
+            if (!values.length) {
+                chart.innerHTML = '<text x="350" y="112" text-anchor="middle" fill="#617182">N/A</text>';
+                return;
+            }
+            const radonValues = values.map((point) => Number(point.radon_bq_m3));
+            const min = Math.min.apply(null, radonValues);
+            const max = Math.max.apply(null, radonValues);
+            const span = Math.max(max - min, 1);
+            const xStep = (700 - 56) / Math.max(values.length - 1, 1);
+            const points = radonValues.map((value, index) => {
+                const x = 28 + index * xStep;
+                const y = 192 - ((value - min) / span) * 164;
+                return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(" ");
+            chart.innerHTML = `<line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line><line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line><polyline points="${points}" fill="none" stroke="#2d6cdf" stroke-width="3"></polyline>`;
+            caption.textContent = `Range: ${min.toFixed(1)} to ${max.toFixed(1)} Bq/m3; showing ${payload.returned_count} of ${payload.source_count} records.`;
+        });
+}());
+</script>
+{% endif %}
+{% endblock %}

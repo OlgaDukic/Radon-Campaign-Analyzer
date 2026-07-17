@@ -1,0 +1,10 @@
+id,source_document,page,equation_number,original_notation,latex,status,explicit_sirem,validity
+EQ-2016-1a,phd thesis_Simona Mancini.pdf,63,Eq.(1),Cus = Nus / Vus * lambda_Rn,C_{us} = (N_{us}/V_{us})\lambda_{Rn},EXTRACTED,yes,steady-state dNus/dt=0
+EQ-2016-1b,phd thesis_Simona Mancini.pdf,63,Eq.(1),Cds = Nds / Vds * lambda_Rn,C_{ds} = (N_{ds}/V_{ds})\lambda_{Rn},EXTRACTED,yes,steady-state dNds/dt=0
+EQ-2016-1c,phd thesis_Simona Mancini.pdf,63,Eq.(1),Cbm = Nbm / Vbm * lambda_Rn,C_{bm} = (N_{bm}/V_{bm})\lambda_{Rn},EXTRACTED,yes,steady-state dNbm/dt=0
+EQ-2016-1d,phd thesis_Simona Mancini.pdf,63,Eq.(1),"qi,j = Vi * lambda_i,j",q_{i,j} = V_i\lambda_{i,j},EXTRACTED,yes,air exchange relation
+EQ-2016-2,phd thesis_Simona Mancini.pdf,64,Eq.(2),"Ci = Ni / Vi * lambda_Rn = f(Cus, Cds, Cbm, Ce, qi,j)","C_i = (N_i/V_i)\lambda_{Rn} = f(C_{us}, C_{ds}, C_{bm}, C_e, q_{i,j})",EXTRACTED,yes,steady-state dNi/dt=0
+EQ-2016-3,phd thesis_Simona Mancini.pdf,65,Eq.(3),single expression for Ci with BM and soil terms,SOURCE_REVIEW_REQUIRED,SOURCE_REVIEW_REQUIRED,yes,well-mixed single-zone steady-state
+EQ-2022-1,ijerph-19-06056-v2.pdf,4-5,Eq.(1),CeqD = ED / lambda,C_{eqD} = E_D / \lambda,EXTRACTED,related,closed room diffusion equilibrium
+EQ-2022-2,ijerph-19-06056-v2.pdf,5,Eq.(2),"Ci = Ni / Vi * lambda_Rn = f(CUS, Cds, Cbm, Ce, qi,j)","C_i = (N_i/V_i)\lambda_{Rn} = f(C_{US}, C_{ds}, C_{bm}, C_e, q_{i,j})",EXTRACTED,related,well-mixed single-zone steady-state
+

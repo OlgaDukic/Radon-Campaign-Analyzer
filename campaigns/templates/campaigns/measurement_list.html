@@ -1,0 +1,98 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-ux4">
+
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            <p class="app-kicker">Radon Campaign Analyzer</p>
+            <h2>Measurements: {{ campaign.name }}</h2>
+            <div class="campaign-meta">
+                <span class="meta-pill">Rows: {{ paginator.count }}</span>
+                <span class="meta-pill">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+                <span class="meta-pill">Page size: {{ page_size }}</span>
+            </div>
+        </div>
+        <div class="actions">
+            <a class="button-link" href="{% url 'campaigns:campaign_detail' campaign.pk %}">Back to dashboard</a>
+            <a class="button-secondary" href="{% url 'campaigns:export_excel_report' campaign.pk %}">Download Excel Report</a>
+        </div>
+    </header>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Measurement Filters</h3>
+                <p class="section-subtitle">Filters are applied before pagination so large campaigns are not loaded into the page.</p>
+            </div>
+        </div>
+        <form class="paper1-form" method="get">
+            <div class="form-grid">
+                <label>Date from <input type="datetime-local" name="date_from" value="{{ filters.date_from }}"></label>
+                <label>Date to <input type="datetime-local" name="date_to" value="{{ filters.date_to }}"></label>
+                <label>Segment <input type="number" name="segment_id" value="{{ filters.segment_id }}"></label>
+                <label>Concentration level <input type="text" name="concentration_level" value="{{ filters.concentration_level }}"></label>
+                <label>Dynamic state <input type="text" name="dynamic_state" value="{{ filters.dynamic_state }}"></label>
+                <label>Page size
+                    <select name="page_size">
+                        {% for option in page_sizes %}
+                            <option value="{{ option }}" {% if option == page_size %}selected{% endif %}>{{ option }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+            <button class="button" type="submit">Apply filters</button>
+        </form>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Measurement Records</h3>
+                <p class="section-subtitle">Server-side paginated records. Full campaign data remains available in the Excel export.</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="dashboard-table diagnostic-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Radon</th>
+                        <th>Temperature</th>
+                        <th>Humidity</th>
+                        <th>Pressure</th>
+                        <th>Regime/label</th>
+                        <th>Segment ID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in page_obj.object_list %}
+                        <tr>
+                            <td>{{ row.measured_at|default:"N/A" }}</td>
+                            <td>{{ row.radon_bq_m3|default:"N/A" }}</td>
+                            <td>{{ row.temperature_c|default:"N/A" }}</td>
+                            <td>{{ row.humidity_percent|default:"N/A" }}</td>
+                            <td>{{ row.pressure_hpa|default:"N/A" }}</td>
+                            <td>{{ row.regime|default:"N/A" }}</td>
+                            <td>{{ row.segment_id|default:"N/A" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7"><span class="na-value">N/A</span></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination-row">
+            {% if page_obj.has_previous %}
+                <a class="button-link" href="?page={{ page_obj.previous_page_number }}{% if querystring_without_page %}&{{ querystring_without_page }}{% endif %}">Previous</a>
+            {% endif %}
+            <span class="muted">Showing {{ page_obj.object_list|length }} of {{ paginator.count }} matching rows.</span>
+            {% if page_obj.has_next %}
+                <a class="button-link" href="?page={{ page_obj.next_page_number }}{% if querystring_without_page %}&{{ querystring_without_page }}{% endif %}">Next</a>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

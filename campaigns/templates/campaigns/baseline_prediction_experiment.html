@@ -1,0 +1,167 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-baseline1">
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            {% include "campaigns/_campaign_breadcrumb.html" %}
+            <p class="app-kicker">Baseline Prediction Experiment</p>
+            <h2>{{ campaign.name }}</h2>
+            <p>Read-only radon-only baselines for cross-cycle reference performance before intervention-aware modelling.</p>
+        </div>
+        <div class="actions">
+            <a class="button-tertiary" href="{% url 'campaigns:campaign_list' %}">All campaigns</a>
+            <a class="button-link" href="{% url 'campaigns:campaign_prediction' campaign.pk %}">Back to prediction</a>
+            <a class="button-secondary" href="{% url 'campaigns:baseline_prediction_experiment_json' campaign.pk %}">JSON</a>
+            <a class="button-secondary" href="{% url 'campaigns:baseline_prediction_experiment_csv' campaign.pk %}">CSV</a>
+            <a class="button-secondary" href="{% url 'campaigns:baseline_prediction_experiment_excel' campaign.pk %}">Excel</a>
+        </div>
+    </header>
+    {% include "campaigns/_campaign_nav.html" %}
+
+    <section class="warning-item warning">{{ payload.caution }}</section>
+
+    <section class="dashboard-panel">
+        <h3>Configuration</h3>
+        <div class="summary-grid">
+            <article class="summary-card"><span class="card-marker">V</span><div><span>Algorithm</span><strong>{{ payload.algorithm_version }}</strong></div></article>
+            <article class="summary-card"><span class="card-marker">H</span><div><span>Horizons</span><strong>{{ payload.horizons|join:", " }}</strong></div></article>
+            <article class="summary-card"><span class="card-marker">S</span><div><span>Sampling interval</span><strong>{{ payload.sampling_interval_hours|default:"N/A" }} h</strong></div></article>
+            <article class="summary-card"><span class="card-marker">TZ</span><div><span>Timezone</span><strong>{{ payload.timezone_status }}</strong></div></article>
+            <article class="summary-card"><span class="card-marker">R</span><div><span>Rolling mean</span><strong>{{ payload.rolling_window }} observations</strong></div></article>
+        </div>
+    </section>
+
+    {% for experiment in payload.experiments %}
+        <section class="dashboard-panel">
+            <div class="panel-title">
+                <div>
+                    <h3>{{ experiment.label }}</h3>
+                    <p class="section-subtitle">Training: {{ experiment.training_cycle.cycle_label }}. Test: {{ experiment.test_cycle.cycle_label }}. Direct models are trained separately per horizon.</p>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="dashboard-table diagnostic-table">
+                    <thead><tr><th>Horizon</th><th>Model</th><th>N</th><th>MAE</th><th>RMSE</th><th>Mean bias</th><th>Median AE</th><th>Max AE</th></tr></thead>
+                    <tbody>
+                        {% for row in experiment.overall_metrics %}
+                            <tr><td>{{ row.horizon }}</td><td>{{ row.model }}</td><td>{{ row.forecast_count }}</td><td>{{ row.mae|default:"N/A" }}</td><td>{{ row.rmse|default:"N/A" }}</td><td>{{ row.mean_bias|default:"N/A" }}</td><td>{{ row.median_absolute_error|default:"N/A" }}</td><td>{{ row.maximum_absolute_error|default:"N/A" }}</td></tr>
+                        {% empty %}
+                            <tr><td colspan="8">N/A</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <h3>{{ experiment.label }} Phase-Specific Metrics</h3>
+            <p class="section-subtitle">Existing phase metrics are grouped by forecast-origin phase. Target-phase metrics below group by the phase of the value being predicted.</p>
+            <div class="table-wrap">
+                <table class="dashboard-table diagnostic-table">
+                    <thead><tr><th>Horizon</th><th>Model</th><th>Phase</th><th>N</th><th>MAE</th><th>RMSE</th><th>Bias</th><th>Max AE</th></tr></thead>
+                    <tbody>
+                        {% for row in experiment.phase_metrics|slice:":40" %}
+                            <tr><td>{{ row.horizon }}</td><td>{{ row.model }}</td><td>{{ row.phase }}</td><td>{{ row.forecast_count }}</td><td>{{ row.mae|default:"N/A" }}</td><td>{{ row.rmse|default:"N/A" }}</td><td>{{ row.mean_bias|default:"N/A" }}</td><td>{{ row.maximum_absolute_error|default:"N/A" }}</td></tr>
+                        {% empty %}
+                            <tr><td colspan="8">N/A</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <h3>{{ experiment.label }} Fair Comparison Metrics</h3>
+            <p class="section-subtitle">All models are compared on the common set of target timestamps for each horizon.</p>
+            <div class="table-wrap">
+                <table class="dashboard-table diagnostic-table">
+                    <thead><tr><th>Horizon</th><th>Model</th><th>Common N</th><th>MAE</th><th>RMSE</th><th>Bias</th><th>MAE improvement vs persistence</th><th>RMSE improvement vs persistence</th></tr></thead>
+                    <tbody>
+                        {% for row in experiment.fair_comparison_metrics %}
+                            <tr><td>{{ row.horizon }}</td><td>{{ row.model }}</td><td>{{ row.common_target_count }}</td><td>{{ row.mae|default:"N/A" }}</td><td>{{ row.rmse|default:"N/A" }}</td><td>{{ row.bias|default:"N/A" }}</td><td>{{ row.relative_mae_improvement_vs_persistence|default:"N/A" }}</td><td>{{ row.relative_rmse_improvement_vs_persistence|default:"N/A" }}</td></tr>
+                        {% empty %}
+                            <tr><td colspan="8">N/A</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <h3>{{ experiment.label }} Target-Phase Metrics</h3>
+            <div class="table-wrap">
+                <table class="dashboard-table diagnostic-table">
+                    <thead><tr><th>Horizon</th><th>Model</th><th>Target phase</th><th>N</th><th>MAE</th><th>RMSE</th><th>Bias</th><th>Max AE</th></tr></thead>
+                    <tbody>
+                        {% for row in experiment.target_phase_metrics|slice:":40" %}
+                            <tr><td>{{ row.horizon }}</td><td>{{ row.model }}</td><td>{{ row.target_phase }}</td><td>{{ row.forecast_count }}</td><td>{{ row.mae|default:"N/A" }}</td><td>{{ row.rmse|default:"N/A" }}</td><td>{{ row.mean_bias|default:"N/A" }}</td><td>{{ row.maximum_absolute_error|default:"N/A" }}</td></tr>
+                        {% empty %}
+                            <tr><td colspan="8">N/A</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <h3>{{ experiment.label }} Rapid-Removal Diagnostics</h3>
+            <p class="section-subtitle">Failure to anticipate an unknown opening is not treated as a software defect.</p>
+            <div class="table-wrap">
+                <table class="dashboard-table">
+                    <tbody>
+                        <tr><th>Concentration immediately before removal</th><td>{{ experiment.rapid_removal_diagnostics.concentration_immediately_before|default:"N/A" }}</td></tr>
+                        <tr><th>Observed time to <=50 Bq/m3</th><td>{{ experiment.rapid_removal_diagnostics.observed_time_to_lte_50_hours|default:"N/A" }}</td></tr>
+                        <tr><th>Observed time to <=30 Bq/m3</th><td>{{ experiment.rapid_removal_diagnostics.observed_time_to_lte_30_hours|default:"N/A" }}</td></tr>
+                        <tr><th>Largest error during removal</th><td>{{ experiment.rapid_removal_diagnostics.largest_error_during_removal.absolute_error|default:"N/A" }}</td></tr>
+                        <tr><th>Forecasts at 1 h, 3 h and 6 h</th><td><code>{{ experiment.rapid_removal_diagnostics.forecast_observed_at_horizons }}</code></td></tr>
+                        <tr><th>Predicted time to <=50 Bq/m3</th><td><code>{{ experiment.rapid_removal_diagnostics.predicted_time_to_lte_50_hours_by_model }}</code></td></tr>
+                        <tr><th>Predicted time to <=30 Bq/m3</th><td><code>{{ experiment.rapid_removal_diagnostics.predicted_time_to_lte_30_hours_by_model }}</code></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="dashboard-panel">
+            <h3>{{ experiment.label }} Actual vs Predicted Plot</h3>
+            {% if experiment.plot.observed_points %}
+                <svg class="line-chart" viewBox="0 0 700 220">
+                    {% for band in experiment.plot.phase_bands %}<rect x="{{ band.x }}" y="28" width="{{ band.width }}" height="164" fill="{{ band.color }}" opacity="0.82"></rect>{% endfor %}
+                    <line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line>
+                    <line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line>
+                    <polyline points="{{ experiment.plot.observed_points }}" fill="none" stroke="#102a43" stroke-width="3"></polyline>
+                    <polyline points="{{ experiment.plot.prediction_series.persistence }}" fill="none" stroke="#2d6cdf" stroke-width="2" opacity="0.75"></polyline>
+                    <polyline points="{{ experiment.plot.prediction_series.rolling_mean_3 }}" fill="none" stroke="#5f9f58" stroke-width="2" opacity="0.75"></polyline>
+                    <polyline points="{{ experiment.plot.prediction_series.ridge_autoregressive }}" fill="none" stroke="#b7791f" stroke-width="2" opacity="0.75"></polyline>
+                </svg>
+                <p class="table-caption">Observed radon is dark; persistence blue; rolling mean green; ridge autoregressive orange.</p>
+            {% else %}
+                <p><span class="na-value">N/A</span></p>
+            {% endif %}
+        </section>
+
+        <section class="dashboard-panel">
+            <h3>{{ experiment.label }} Focused Rapid-Removal Plot</h3>
+            <p class="section-subtitle">Zoomed view around the documented ventilation window. Predictions remain unconditional on future occupant actions.</p>
+            {% if experiment.rapid_removal_plot.observed_points %}
+                <svg class="line-chart" viewBox="0 0 700 220">
+                    {% for band in experiment.rapid_removal_plot.phase_bands %}<rect x="{{ band.x }}" y="28" width="{{ band.width }}" height="164" fill="{{ band.color }}" opacity="0.72"></rect>{% endfor %}
+                    <rect x="{{ experiment.rapid_removal_plot.rapid_removal_band.x }}" y="24" width="{{ experiment.rapid_removal_plot.rapid_removal_band.width }}" height="172" fill="none" stroke="#0f766e" stroke-width="2" stroke-dasharray="5 4"></rect>
+                    <line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line>
+                    <line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line>
+                    <polyline points="{{ experiment.rapid_removal_plot.observed_points }}" fill="none" stroke="#102a43" stroke-width="3"></polyline>
+                    <polyline points="{{ experiment.rapid_removal_plot.prediction_series.persistence }}" fill="none" stroke="#2d6cdf" stroke-width="2" opacity="0.75"></polyline>
+                    <polyline points="{{ experiment.rapid_removal_plot.prediction_series.rolling_mean_3 }}" fill="none" stroke="#5f9f58" stroke-width="2" opacity="0.75"></polyline>
+                    <polyline points="{{ experiment.rapid_removal_plot.prediction_series.ridge_autoregressive }}" fill="none" stroke="#b7791f" stroke-width="2" opacity="0.75"></polyline>
+                </svg>
+            {% else %}
+                <p><span class="na-value">N/A</span></p>
+            {% endif %}
+        </section>
+    {% empty %}
+        <section class="dashboard-panel"><p>No documented cycles are available for this campaign. Add or use documented event definitions first.</p></section>
+    {% endfor %}
+</div>
+{% endblock %}

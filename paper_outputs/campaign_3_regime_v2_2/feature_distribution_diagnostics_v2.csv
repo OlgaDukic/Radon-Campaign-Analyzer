@@ -1,0 +1,5 @@
+feature,sample_count,q01,q05,q10,q25,q50,q75,q90,q95,q99
+adjacent_slope_bq_m3_per_hour,1557,-44.0,-17.0,-12.0,-6.0,0.0,6.0,13.0,18.0,33.0
+short_slope_bq_m3_per_hour,1557,-22.0,-9.5,-6.5,-3.0,0.0,3.5,7.0,9.5,19.0
+medium_slope_bq_m3_per_hour,1557,-17.0,-4.6,-2.8,-1.4,0.0,1.8,3.4,5.2,11.8
+local_variability_mad,1583,0.0,0.0,1.0,2.0,3.5,5.5,9.0,12.5,21.5

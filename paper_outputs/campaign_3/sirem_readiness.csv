@@ -1,0 +1,15 @@
+item,available,source,notes,importance_for_sirem
+room_volume,unknown,unknown,Not captured by the current prototype; can be added manually for future SIREM-informed validation.,high
+surfaces_in_contact_with_soil,unknown,unknown,Not captured by the current prototype; can be added manually for future SIREM-informed validation.,high
+building_materials,unknown,unknown,Not captured by the current prototype; can be added manually for future SIREM-informed validation.,medium
+sensor_position,unknown,unknown,Not captured by the current prototype; can be added manually for future SIREM-informed validation.,high
+ventilation_mode,unknown,unknown,Not captured by the current prototype; can be added manually for future SIREM-informed validation.,high
+known_opening_ventilation_events,unknown,unknown,Not captured by the current prototype; can be added manually for future SIREM-informed validation.,medium
+pressure_data,no,unknown,Not available in the current campaign data.,high
+temperature_data,no,unknown,Not available in the current campaign data.,medium
+relative_humidity_data,no,unknown,Not available in the current campaign data.,medium
+continuous_radon_data,yes,file,Available from current campaign data or derived research outputs.,high
+quality_flags,yes,derived,Available from current campaign data or derived research outputs.,high
+regime_labels,yes,derived,Available from current campaign data or derived research outputs.,medium
+contextual_event_log,unknown,unknown,Not captured by the current prototype; can be added manually for future SIREM-informed validation.,medium
+source_file_provenance,yes,file,Available from current campaign data or derived research outputs.,high

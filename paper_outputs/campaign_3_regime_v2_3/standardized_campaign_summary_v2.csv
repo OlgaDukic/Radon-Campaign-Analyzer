@@ -1,0 +1,19 @@
+field,value
+profile_name,default_radon_hourly
+profile_version,2026-07-v1
+algorithm_version,regime_analysis_v2.2
+sampling_interval_minutes,60.0
+campaign_duration_hours,1665.883
+valid_row_count,1583
+gap_rate_per_1000_hours,15.007
+concentration_level_percentages,"{""ELEVATED"": 4.169, ""HIGH"": 6.696, ""LOW"": 89.135}"
+dynamic_state_percentages,"{""FALLING"": 2.969, ""QUALITY_AFFECTED"": 2.274, ""RISING"": 4.296, ""STABLE"": 84.144, ""SUDDEN_DROP"": 0.253, ""UNSTABLE_TRANSITION"": 6.064}"
+episode_counts_per_1000_hours,"{""ACCUMULATION"": 7.203, ""DECLINE"": 4.802, ""QUALITY_AFFECTED"": 15.607, ""STABLE_ELEVATED"": 4.202, ""STABLE_HIGH"": 4.802, ""STABLE_LOW"": 22.811, ""SUDDEN_DROP_EVENT"": 1.801, ""UNSTABLE_TRANSITION"": 28.213}"
+median_episode_duration_by_type,"{""ACCUMULATION"": 2.0, ""DECLINE"": 2.0, ""QUALITY_AFFECTED"": 0, ""STABLE_ELEVATED"": 0, ""STABLE_HIGH"": 0, ""STABLE_LOW"": 17.0, ""SUDDEN_DROP_EVENT"": 0, ""UNSTABLE_TRANSITION"": 0}"
+maximum_radon,284.0
+time_above_low_threshold_hours,171.0
+time_above_high_threshold_hours,95.0
+median_absolute_slope,6.0
+p90_absolute_slope,18.0
+median_confidence,0.817
+low_confidence_percent,2.843

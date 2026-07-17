@@ -1,0 +1,31 @@
+<header class="dashboard-hero overview-hero">
+    <div>
+        {% include "campaigns/_campaign_breadcrumb.html" %}
+        <p class="app-kicker">Radon Campaign Analyzer</p>
+        <h2>{{ campaign.name }}</h2>
+        <div class="campaign-meta">
+            <span class="meta-pill">Location: {{ campaign.location|default:"N/A" }}</span>
+            <span class="meta-pill">Measurements: {{ dashboard.date_range }}</span>
+            <span class="status-pill">Report: {{ dashboard.report_meta.status }}</span>
+            <span class="meta-pill">Profile: {{ dashboard.report_meta.profile_name }} {{ dashboard.report_meta.profile_version }}</span>
+            <span class="status-pill status-{{ dashboard.profile_level }}">{{ dashboard.profile_badge }}</span>
+        </div>
+    </div>
+    <div class="actions overview-actions">
+        <a class="button-primary" href="{% url 'campaigns:run_campaign_analysis' campaign.pk %}">Run new analysis</a>
+        <a class="button-tertiary" href="{% url 'campaigns:campaign_list' %}">All campaigns</a>
+        <a class="button-secondary" href="{% url 'campaigns:upload_file' campaign.pk %}">Add files</a>
+        {% if latest_report %}
+            <a class="button-secondary" href="{{ export_excel_url }}?mode=compact">Download compact report</a>
+        {% endif %}
+        <details class="more-actions">
+            <summary>More actions</summary>
+            <div>
+                <a href="{% url 'campaigns:campaign_measurements' campaign.pk %}">Measurements</a>
+                <a href="{% url 'campaigns:campaign_provenance' campaign.pk %}">Provenance</a>
+                {% if latest_report %}<a href="{{ export_excel_url }}">Download full audit report</a>{% endif %}
+                <a href="{% url 'campaigns:campaign_reports' campaign.pk %}">Reports & Exports</a>
+            </div>
+        </details>
+    </div>
+</header>

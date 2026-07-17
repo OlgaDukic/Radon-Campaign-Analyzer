@@ -1,0 +1,101 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}">
+<div class="dashboard-shell">
+  <header class="dashboard-hero">
+    <div>
+      {% include "campaigns/_campaign_breadcrumb.html" %}
+      <p class="app-kicker">Prediction Experiment</p>
+      <h2>Reduced State-Space Experiment</h2>
+      <p>{{ campaign.name }}</p>
+      <p class="muted">Exploratory sequential state-estimation audit. Apparent dynamics are not ACH, measured ventilation, material exhalation, or regulatory risk conclusions.</p>
+    </div>
+    <div class="actions">
+      <a class="button-tertiary" href="{% url 'campaigns:campaign_prediction' campaign.pk %}">Back to prediction</a>
+      <a class="button-secondary" href="{% url 'campaigns:reduced_state_space_experiment_json' campaign.pk %}">JSON</a>
+      <a class="button-secondary" href="{% url 'campaigns:reduced_state_space_experiment_csv' campaign.pk %}">CSV</a>
+      <a class="button-secondary" href="{% url 'campaigns:reduced_state_space_experiment_excel' campaign.pk %}">Excel</a>
+    </div>
+  </header>
+
+  <section class="dashboard-panel">
+    <h3>Model Boundary</h3>
+    <p><code>C_(k+1) = a_r C_k + b_r + w_k</code>; <code>y_k = C_k + v_k</code>. The state vector is <code>x_k = [C_k]</code>.</p>
+    <p>F1 uses no future event knowledge. F2 is a known-intervention scenario and is not autonomous event prediction.</p>
+  </section>
+
+  <section class="dashboard-panel">
+    <h3>Configuration</h3>
+    <div class="table-wrap">
+      <table class="dashboard-table">
+        <tbody>
+          <tr><th>Algorithm</th><td>{{ payload.algorithm_version }}</td></tr>
+          <tr><th>Primary R scenario</th><td>{{ payload.manifest.primary_r_scenario }}</td></tr>
+          <tr><th>Q grid</th><td>{{ payload.manifest.q_grid }}</td></tr>
+          <tr><th>Prediction interval</th><td>{{ payload.manifest.prediction_interval }}</td></tr>
+          <tr><th>Duplicate forecast keys</th><td>{{ payload.duplicate_forecast_key_count }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="dashboard-panel">
+    <h3>Estimated Regime Parameters</h3>
+    <div class="table-wrap">
+      <table class="dashboard-table diagnostic-table">
+        <thead><tr><th>Experiment</th><th>Regime</th><th>a</th><th>b</th><th>kappa</th><th>C_eq</th><th>N</th><th>Flags</th></tr></thead>
+        <tbody>
+          {% for row in payload.parameter_audit %}
+          <tr><td>{{ row.experiment }}</td><td>{{ row.regime }}</td><td>{{ row.a }}</td><td>{{ row.b }}</td><td>{{ row.kappa_h_minus_1|default:"N/A" }}</td><td>{{ row.C_eq_bq_m3|default:"N/A" }}</td><td>{{ row.sample_count }}</td><td>{{ row.flags }}</td></tr>
+          {% empty %}<tr><td colspan="8">N/A</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="dashboard-panel">
+    <h3>Overall Performance</h3>
+    <p class="muted">Metrics are calculated on valid target timestamps. Primary coverage uses the nominal 95% future-observation predictive interval, which includes observation noise R. Latent-state uncertainty intervals remain available in JSON/CSV/Excel exports.</p>
+    <div class="table-wrap">
+      <table class="dashboard-table diagnostic-table">
+        <thead><tr><th>Experiment</th><th>Mode</th><th>R</th><th>Horizon</th><th>N</th><th>MAE</th><th>RMSE</th><th>Bias</th><th>Coverage</th><th>Mean width</th></tr></thead>
+        <tbody>
+          {% for row in payload.overall_performance %}
+          <tr><td>{{ row.experiment }}</td><td>{{ row.forecast_mode }}</td><td>{{ row.R_scenario }}</td><td>{{ row.horizon }}</td><td>{{ row.N }}</td><td>{{ row.MAE }}</td><td>{{ row.RMSE }}</td><td>{{ row.bias }}</td><td>{{ row.empirical_coverage }}</td><td>{{ row.mean_interval_width }}</td></tr>
+          {% empty %}<tr><td colspan="10">N/A</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="dashboard-panel">
+    <h3>Q Selection Audit</h3>
+    <div class="table-wrap">
+      <table class="dashboard-table diagnostic-table">
+        <thead><tr><th>Experiment</th><th>Q candidate</th><th>Validation RMSE</th><th>Selected</th><th>Rule</th></tr></thead>
+        <tbody>
+          {% for row in payload.q_selection_audit %}
+          <tr><td>{{ row.experiment }}</td><td>{{ row.q_candidate }}</td><td>{{ row.validation_metric_rmse|default:"N/A" }}</td><td>{{ row.selected }}</td><td>{{ row.validation_rule }}</td></tr>
+          {% empty %}<tr><td colspan="5">N/A</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="dashboard-panel">
+    <h3>Intervention Response</h3>
+    <div class="table-wrap">
+      <table class="dashboard-table diagnostic-table">
+        <thead><tr><th>Experiment</th><th>Mode</th><th>Horizon</th><th>Pre-event error</th><th>First rapid target error</th><th>Max rapid error</th><th>After first obs</th><th>After second obs</th><th>After third obs</th></tr></thead>
+        <tbody>
+          {% for row in payload.intervention_response %}
+          <tr><td>{{ row.experiment }}</td><td>{{ row.forecast_mode }}</td><td>{{ row.horizon }}</td><td>{{ row.pre_event_forecast_error|default:"N/A" }}</td><td>{{ row.first_rapid_removal_target_error|default:"N/A" }}</td><td>{{ row.maximum_rapid_removal_error|default:"N/A" }}</td><td>{{ row.adaptation_after_first_new_observation|default:"N/A" }}</td><td>{{ row.adaptation_after_second_new_observation|default:"N/A" }}</td><td>{{ row.adaptation_after_third_new_observation|default:"N/A" }}</td></tr>
+          {% empty %}<tr><td colspan="9">N/A</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

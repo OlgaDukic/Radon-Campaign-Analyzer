@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Campaign, UploadedFile
+from .models import Campaign, CampaignResearchContext, UploadedFile
 
 
 class CampaignForm(forms.ModelForm):
@@ -57,3 +57,12 @@ class Paper1AnalysisForm(forms.Form):
         if not value:
             raise forms.ValidationError("Resample interval cannot be empty.")
         return value
+
+
+class ResearchContextForm(forms.ModelForm):
+    class Meta:
+        model = CampaignResearchContext
+        exclude = ["campaign", "created_at", "updated_at"]
+        widgets = {
+            "notes": forms.Textarea(attrs={"rows": 4}),
+        }

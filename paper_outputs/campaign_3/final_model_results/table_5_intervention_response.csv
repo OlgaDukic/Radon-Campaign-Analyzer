@@ -1,0 +1,5 @@
+Error after first new observation,Error after second new observation,Error after third new observation,Experiment,First rapid-removal target error,Forecast mode,Horizon,Maximum rapid-removal error,Warning
+73.103,-8.0,-3.0,Experiment A,73.103,F1 no future event knowledge,1h,73.103,Rapid-removal estimates are descriptive because of small N and provisional event boundaries.
+-116.0,-8.0,-3.0,Experiment A,-116.0,F2 known-intervention scenario,1h,116.0,Rapid-removal estimates are descriptive because of small N and provisional event boundaries.
+177.85,10.556,-13.563,Experiment B,177.85,F1 no future event knowledge,1h,177.85,Rapid-removal estimates are descriptive because of small N and provisional event boundaries.
+0.714,10.556,-13.563,Experiment B,0.714,F2 known-intervention scenario,1h,13.563,Rapid-removal estimates are descriptive because of small N and provisional event boundaries.

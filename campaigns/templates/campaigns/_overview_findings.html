@@ -1,0 +1,18 @@
+<section class="dashboard-panel findings-panel">
+    <div class="panel-title">
+        <div>
+            <h3>Research Summary</h3>
+            <p class="section-subtitle">Plain-language interpretation from existing campaign-level results.</p>
+        </div>
+    </div>
+    {% if dashboard.findings %}
+        <div class="findings-list">
+            {% for finding in dashboard.findings %}
+                <p>{{ finding }}</p>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p><span class="na-value">N/A</span></p>
+    {% endif %}
+    <p class="section-action"><a class="button-tertiary button-small" href="{% url 'campaigns:campaign_regimes' campaign.pk %}">Explore regimes</a></p>
+</section>

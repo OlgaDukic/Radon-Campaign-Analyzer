@@ -1,0 +1,6 @@
+threshold_multiplier,regime_counts,regime_durations,percentage_agreement_with_baseline,transitions_count,most_sensitive_regimes,adjusted_rand_index
+0.8,"{""high_episode"": 249, ""stable_elevated"": 11674, ""stable_low"": 24880}","{""high_episode"": 249, ""stable_elevated"": 11674, ""stable_low"": 24880}",80.13,3445,"[""stable_low"", ""stable_elevated""]",N/A
+0.9,"{""high_episode"": 210, ""stable_elevated"": 7560, ""stable_low"": 29033}","{""high_episode"": 210, ""stable_elevated"": 7560, ""stable_low"": 29033}",91.52,3013,"[""stable_low"", ""stable_elevated""]",N/A
+1.0,"{""high_episode"": 167, ""stable_elevated"": 4524, ""stable_low"": 32112}","{""high_episode"": 167, ""stable_elevated"": 4524, ""stable_low"": 32112}",100.0,2212,[],N/A
+1.1,"{""high_episode"": 129, ""stable_elevated"": 2445, ""stable_low"": 34229}","{""high_episode"": 129, ""stable_elevated"": 2445, ""stable_low"": 34229}",94.14,1438,"[""stable_elevated"", ""high_episode""]",N/A
+1.2,"{""high_episode"": 99, ""stable_elevated"": 1422, ""stable_low"": 35282}","{""high_episode"": 99, ""stable_elevated"": 1422, ""stable_low"": 35282}",91.2,908,"[""stable_elevated"", ""high_episode""]",N/A

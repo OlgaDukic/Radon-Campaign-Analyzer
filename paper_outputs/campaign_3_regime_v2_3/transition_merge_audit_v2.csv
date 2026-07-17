@@ -1,0 +1,26 @@
+merge_id,original_episode_ids,merge_decision,merge_reason,resulting_episode_id,segment_id,episode_type
+1,"[2, 3, 4]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,2,4,STABLE_LOW
+2,"[2, 3, 4]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,2,5,STABLE_LOW
+3,"[17, 18, 19]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,17,5,UNSTABLE_TRANSITION
+4,"[27, 28, 29]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,27,5,UNSTABLE_TRANSITION
+5,"[31, 32, 33]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,31,5,UNSTABLE_TRANSITION
+6,"[34, 35, 36]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,34,5,STABLE_HIGH
+7,"[34, 37, 38]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,34,5,STABLE_HIGH
+8,"[49, 50, 51]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,49,5,STABLE_LOW
+9,"[56, 57, 58]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,56,5,STABLE_LOW
+10,"[56, 59, 60]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,56,5,STABLE_LOW
+11,"[4, 5, 6]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,4,6,STABLE_LOW
+12,"[8, 9, 10]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,8,6,STABLE_LOW
+13,"[12, 13, 14]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,12,6,UNSTABLE_TRANSITION
+14,"[22, 23, 24]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,22,6,STABLE_ELEVATED
+15,"[30, 31, 32]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,30,6,UNSTABLE_TRANSITION
+16,"[38, 39, 40]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,38,6,UNSTABLE_TRANSITION
+17,"[46, 47, 48]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,46,6,STABLE_HIGH
+18,"[46, 49, 50]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,46,6,STABLE_HIGH
+19,"[5, 6, 7]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,5,8,STABLE_LOW
+20,"[5, 8, 9]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,5,8,STABLE_LOW
+21,"[2, 3, 4]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,2,17,STABLE_LOW
+22,"[3, 4, 5]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,3,19,STABLE_LOW
+23,"[3, 4, 5]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,3,24,STABLE_LOW
+24,"[3, 6, 7]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,3,24,STABLE_LOW
+25,"[3, 8, 9]",MERGED_SHORT_TRANSITION,short transition bridged two compatible episode types without a sudden or quality boundary,3,24,STABLE_LOW

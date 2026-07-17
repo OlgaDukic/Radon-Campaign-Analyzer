@@ -58,7 +58,7 @@ def summary_to_text(summary_json):
 
 def build_html_report(campaign, summary_json):
     segment_rows = "\n".join(_segment_interpretation_html(segment) for segment in summary_json["segments"])
-    regime_rows = "\n".join(_regime_html(summary_json["regime_counts"]))
+    regime_rows = _regime_html(summary_json["regime_counts"])
     prediction_rows = "\n".join(_prediction_html(summary_json.get("prediction_metrics", {})))
     ingestion_rows = "\n".join(_ingestion_html(summary_json.get("ingestion_debug", [])))
     return f"""

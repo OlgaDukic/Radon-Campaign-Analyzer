@@ -1,0 +1,13 @@
+count,experiment,horizon,reason,role
+1,Experiment A,1h,target_outside_cycle_window,training
+1,Experiment A,1h,target_outside_cycle_window,test
+3,Experiment A,3h,target_outside_cycle_window,training
+3,Experiment A,3h,target_outside_cycle_window,test
+6,Experiment A,6h,target_outside_cycle_window,training
+6,Experiment A,6h,target_outside_cycle_window,test
+1,Experiment B,1h,target_outside_cycle_window,training
+1,Experiment B,1h,target_outside_cycle_window,test
+3,Experiment B,3h,target_outside_cycle_window,training
+3,Experiment B,3h,target_outside_cycle_window,test
+6,Experiment B,6h,target_outside_cycle_window,training
+6,Experiment B,6h,target_outside_cycle_window,test

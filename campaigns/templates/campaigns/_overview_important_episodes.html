@@ -1,0 +1,34 @@
+<section class="dashboard-panel">
+    <div class="panel-title">
+        <div>
+            <h3>Important Episodes</h3>
+            <p class="section-subtitle">Top 5 important episodes. {{ dashboard.important_episode_total }} episodes detected in total.</p>
+        </div>
+        <a class="button-secondary button-small" href="{% url 'campaigns:campaign_regimes' campaign.pk %}">Open Regimes & Episodes</a>
+    </div>
+    {% if dashboard.important_episodes %}
+        <div class="table-wrap">
+            <table class="dashboard-table episode-table">
+                <thead><tr><th>Episode</th><th>Period</th><th>Duration</th><th>Maximum</th><th>Confidence</th><th>Action</th></tr></thead>
+                <tbody>
+                    {% for episode in dashboard.important_episodes|slice:":5" %}
+                        <tr>
+                            <td>{{ episode.episode_type_display }}</td>
+                            <td>{{ episode.period_display }}</td>
+                            <td>{{ episode.duration_display }}</td>
+                            <td>{{ episode.max_radon|default:"N/A" }} Bq/m3</td>
+                            <td><span class="status-badge">{{ episode.confidence_display }}</span></td>
+                            <td><a class="button-tertiary button-small" href="{% url 'campaigns:campaign_regimes' campaign.pk %}" aria-label="View {{ episode.episode_type_display }} episode from {{ episode.period_display }}">View episode</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if dashboard.important_episode_total > 5 %}
+            <p class="table-caption"><a class="button-link button-small" href="{% url 'campaigns:campaign_regimes' campaign.pk %}">Show more</a></p>
+        {% endif %}
+    {% else %}
+        <p><span class="na-value">No high-confidence physical episodes met the current minimum-duration criteria.</span></p>
+        <p class="table-caption"><a class="button-link button-small" href="{% url 'campaigns:campaign_quality' campaign.pk %}">Review data-quality events</a></p>
+    {% endif %}
+</section>

@@ -1,0 +1,25 @@
+Bias,Experiment,Future-observation coverage,Horizon,MAE,Maximum AE,Mean interval width,N,RMSE,Target phase
+-2.534,Experiment A,0.918,1h,18.791,75.656,80.709,85,23.788,accumulation
+2.467,Experiment A,1.0,1h,6.388,19.703,80.628,32,8.432,baseline
+3.694,Experiment A,1.0,1h,6.174,20.0,80.539,46,7.923,post_event
+19.526,Experiment A,0.75,1h,25.026,73.103,75.18,4,37.66,rapid_removal
+-6.316,Experiment A,0.988,3h,19.477,86.902,117.267,85,25.632,accumulation
+7.149,Experiment A,1.0,3h,10.334,22.369,117.211,30,11.963,baseline
+9.212,Experiment A,1.0,3h,10.549,29.282,115.728,46,12.618,post_event
+62.326,Experiment A,0.5,3h,63.826,160.967,95.301,4,89.234,rapid_removal
+-11.331,Experiment A,0.988,6h,23.974,94.273,154.091,85,31.253,accumulation
+14.695,Experiment A,1.0,6h,16.011,33.583,154.049,27,18.868,baseline
+20.481,Experiment A,0.978,6h,20.534,187.957,150.943,46,33.361,post_event
+146.837,Experiment A,0.25,6h,146.837,205.238,154.091,4,156.514,rapid_removal
+-4.59,Experiment B,0.855,1h,17.881,57.297,63.025,110,21.884,accumulation
+4.988,Experiment B,1.0,1h,6.912,17.729,62.976,32,8.185,baseline
+5.321,Experiment B,1.0,1h,6.118,17.171,62.829,46,7.569,post_event
+58.281,Experiment B,0.667,1h,67.323,177.85,58.063,3,103.16,rapid_removal
+-9.67,Experiment B,0.882,3h,20.51,75.349,82.194,110,26.227,accumulation
+11.243,Experiment B,1.0,3h,11.607,23.449,82.158,30,13.232,baseline
+11.353,Experiment B,1.0,3h,11.659,20.655,81.168,46,13.104,post_event
+112.894,Experiment B,0.333,3h,120.09,197.495,73.364,3,144.013,rapid_removal
+-15.896,Experiment B,0.909,6h,25.161,87.075,102.321,110,31.18,accumulation
+19.388,Experiment B,1.0,6h,19.388,34.838,102.293,27,20.736,baseline
+27.505,Experiment B,0.957,6h,27.505,195.942,101.105,46,44.069,post_event
+147.056,Experiment B,0.0,6h,147.056,163.806,102.321,3,147.723,rapid_removal

@@ -1,0 +1,10 @@
+field,value
+raw_imported_rows,1583
+exact_duplicate_rows_removed,0
+duplicate_conflict_rows,0
+rows_removed_due_to_conflict_resolution,0
+rows_removed_due_to_missing_or_invalid_radon,0
+rows_removed_due_to_other_quality_rules,0
+canonical_valid_rows,1583
+canonical_hourly_rows,1581
+notes,Reconciliation is computed from report JSON. Canonical valid rows exclude exact duplicate removals and rows marked invalid by canonical conflict or radon validity rules; hourly rows are aggregate intervals.

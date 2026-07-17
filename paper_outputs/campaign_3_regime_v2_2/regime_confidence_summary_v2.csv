@@ -1,0 +1,32 @@
+section,key,value
+confidence_category_counts,HIGH,382
+confidence_category_counts,LOW,85
+confidence_category_counts,MEDIUM,1116
+confidence_distribution_by_dynamic_state,FALLING,"{""HIGH"": 58, ""LOW"": 7, ""MEDIUM"": 35}"
+confidence_distribution_by_dynamic_state,QUALITY_AFFECTED,"{""LOW"": 35, ""MEDIUM"": 1}"
+confidence_distribution_by_dynamic_state,RISING,"{""HIGH"": 45, ""LOW"": 10, ""MEDIUM"": 49}"
+confidence_distribution_by_dynamic_state,STABLE,"{""HIGH"": 200, ""LOW"": 33, ""MEDIUM"": 1003}"
+confidence_distribution_by_dynamic_state,SUDDEN_DROP,"{""HIGH"": 3, ""MEDIUM"": 1}"
+confidence_distribution_by_dynamic_state,UNSTABLE_TRANSITION,"{""HIGH"": 76, ""MEDIUM"": 27}"
+confidence_distribution_by_episode_type,ACCUMULATION,"{""HIGH"": 9, ""MEDIUM"": 3}"
+confidence_distribution_by_episode_type,DECLINE,"{""HIGH"": 10, ""MEDIUM"": 4}"
+confidence_distribution_by_episode_type,QUALITY_AFFECTED,"{""LOW"": 26}"
+confidence_distribution_by_episode_type,STABLE_ELEVATED,"{""HIGH"": 4, ""MEDIUM"": 2}"
+confidence_distribution_by_episode_type,STABLE_HIGH,"{""HIGH"": 4, ""LOW"": 1, ""MEDIUM"": 6}"
+confidence_distribution_by_episode_type,STABLE_LOW,"{""HIGH"": 10, ""LOW"": 5, ""MEDIUM"": 71}"
+confidence_distribution_by_episode_type,SUDDEN_DROP_EVENT,"{""HIGH"": 2, ""MEDIUM"": 1}"
+confidence_distribution_by_episode_type,UNSTABLE_TRANSITION,"{""HIGH"": 58, ""LOW"": 10, ""MEDIUM"": 57}"
+reason_code_counts,EXPLICIT_INSTABILITY_EVIDENCE,64
+reason_code_counts,HIGH_LOCAL_VARIABILITY,12
+reason_code_counts,INSUFFICIENT_WINDOW,51
+reason_code_counts,LONG_STABLE_DURATION,1213
+reason_code_counts,LOW_LOCAL_VARIABILITY,1527
+reason_code_counts,NEAR_GAP,51
+reason_code_counts,PERSISTENCE_ADJUSTED_STATE,288
+reason_code_counts,RAW_SMOOTHED_DISAGREEMENT,101
+reason_code_counts,SHORT_MEDIUM_SLOPE_AGREEMENT,932
+reason_code_counts,SLOPE_NEAR_THRESHOLD,1499
+reason_code_counts,STRONG_PERSISTENT_TREND,49
+reason_code_counts,SUFFICIENT_WINDOW,1532
+low_confidence_row_count,rows,85
+low_confidence_episode_count,episodes,42

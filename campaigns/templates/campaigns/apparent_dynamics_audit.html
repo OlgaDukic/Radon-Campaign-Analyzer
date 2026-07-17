@@ -1,0 +1,87 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260717-apparent1">
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            {% include "campaigns/_campaign_breadcrumb.html" %}
+            <p class="app-kicker">Apparent Dynamics Audit</p>
+            <h2>{{ campaign.name }}</h2>
+            <p>Read-only reduced S.I.R.E.M.-informed apparent dynamics audit for documented RadonEye cycles.</p>
+        </div>
+        <div class="actions">
+            <a class="button-tertiary" href="{% url 'campaigns:campaign_list' %}">All campaigns</a>
+            <a class="button-link" href="{% url 'campaigns:campaign_prediction' campaign.pk %}">Back to prediction</a>
+            <a class="button-secondary" href="{% url 'campaigns:apparent_dynamics_audit_json' campaign.pk %}">JSON</a>
+            <a class="button-secondary" href="{% url 'campaigns:apparent_dynamics_audit_csv' campaign.pk %}">CSV</a>
+            <a class="button-secondary" href="{% url 'campaigns:apparent_dynamics_audit_excel' campaign.pk %}">Excel</a>
+        </div>
+    </header>
+    {% include "campaigns/_campaign_nav.html" %}
+
+    <section class="warning-item warning">
+        Apparent relaxation rates are not ACH or measured ventilation. Yellow-tuff measurements are supporting material evidence and are not directly substituted as Cbm.
+    </section>
+
+    <section class="dashboard-panel">
+        <h3>Manifest</h3>
+        <div class="summary-grid">
+            <article class="summary-card"><span class="card-marker">V</span><div><span>Version</span><strong>{{ payload.algorithm_version }}</strong></div></article>
+            <article class="summary-card"><span class="card-marker">Rn</span><div><span>Radon decay</span><strong>{{ payload.manifest.radon_decay_constant_h_minus_1 }} h-1</strong></div></article>
+            <article class="summary-card"><span class="card-marker">Y</span><div><span>Yellow tuff</span><strong>{{ payload.manifest.yellow_tuff_measurement_status }}</strong></div></article>
+            <article class="summary-card"><span class="card-marker">T</span><div><span>Timestamps</span><strong>Provisional</strong></div></article>
+        </div>
+    </section>
+
+    <section class="dashboard-panel">
+        <h3>Phase Fit Results</h3>
+        <div class="table-wrap">
+            <table class="dashboard-table diagnostic-table">
+                <thead><tr><th>Cycle</th><th>Phase</th><th>Fit</th><th>N</th><th>kappa</th><th>Ceq</th><th>s</th><th>Half-time</th><th>RMSE</th><th>Status</th><th>Flags</th></tr></thead>
+                <tbody>
+                    {% for row in payload.phase_fit_results %}
+                        <tr><td>{{ row.cycle_label }}</td><td>{{ row.phase }}</td><td>{{ row.fit_name }}</td><td>{{ row.observation_count }}</td><td>{{ row.kappa_h_minus_1|default:"N/A" }}</td><td>{{ row.C_eq_bq_m3|default:"N/A" }}</td><td>{{ row.s_bq_m3_per_h|default:"N/A" }}</td><td>{{ row.half_time_h|default:"N/A" }}</td><td>{{ row.rmse|default:"N/A" }}</td><td>{{ row.identifiability_status|default:"N/A" }}</td><td>{{ row.flags|default:"" }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="11">N/A</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="dashboard-panel">
+        <h3>Rapid-Removal Boundary Sensitivity</h3>
+        <p class="section-subtitle">Boundary variants are not selected as true opening times; they show sensitivity to provisional timestamps.</p>
+        <div class="table-wrap">
+            <table class="dashboard-table diagnostic-table">
+                <thead><tr><th>Cycle</th><th>Shift h</th><th>N</th><th>Initial</th><th>Final</th><th>D1 kappa</th><th>D2 kappa</th><th>D3 kappa</th><th>D2 endpoint</th><th>D3 endpoint</th><th>Status</th></tr></thead>
+                <tbody>
+                    {% for row in payload.rapid_removal_boundary_sensitivity %}
+                        <tr><td>{{ row.cycle_label }}</td><td>{{ row.boundary_shift_h }}</td><td>{{ row.observation_count }}</td><td>{{ row.initial_removal_concentration_bq_m3|default:"N/A" }}</td><td>{{ row.final_removal_concentration_bq_m3|default:"N/A" }}</td><td>{{ row.D1_kappa_h_minus_1|default:"N/A" }}</td><td>{{ row.D2_kappa_h_minus_1|default:"N/A" }}</td><td>{{ row.D3_kappa_h_minus_1|default:"N/A" }}</td><td>{{ row.D2_endpoint_kappa_h_minus_1|default:"N/A" }}</td><td>{{ row.D3_endpoint_kappa_h_minus_1|default:"N/A" }}</td><td>{{ row.status }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="11">N/A</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="dashboard-panel">
+        <h3>Cycle Comparison</h3>
+        <div class="table-wrap">
+            <table class="dashboard-table diagnostic-table">
+                <thead><tr><th>Cycle</th><th>Accumulation slope</th><th>Accumulation kappa</th><th>Accumulation Ceq</th><th>Rapid D1</th><th>Rapid D2</th><th>Rapid D3</th><th>Boundary range</th><th>Floor range</th></tr></thead>
+                <tbody>
+                    {% for row in payload.cycle_comparison %}
+                        <tr><td>{{ row.cycle_label }}</td><td>{{ row.accumulation_linear_slope|default:"N/A" }}</td><td>{{ row.accumulation_apparent_kappa|default:"N/A" }}</td><td>{{ row.accumulation_apparent_C_eq|default:"N/A" }}</td><td>{{ row.rapid_removal_D1_kappa|default:"N/A" }}</td><td>{{ row.rapid_removal_D2_kappa|default:"N/A" }}</td><td>{{ row.rapid_removal_D3_kappa|default:"N/A" }}</td><td>{{ row.boundary_D2_kappa_range|default:"N/A" }}</td><td>{{ row.floor_kappa_range|default:"N/A" }}</td></tr>
+                    {% empty %}
+                        <tr><td colspan="9">N/A</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

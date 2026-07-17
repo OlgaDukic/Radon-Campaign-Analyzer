@@ -1,0 +1,36 @@
+<section class="dashboard-panel warnings-panel">
+    <div class="panel-title">
+        <div>
+            <h3>Key Warnings</h3>
+            <p class="section-subtitle">Highest-priority review notes. These are research diagnostics, not regulatory conclusions.</p>
+        </div>
+    </div>
+    {% if dashboard.warnings %}
+        <div class="warning-list">
+            {% for warning in dashboard.warnings|slice:":3" %}
+                <article class="warning-card {{ warning.level }}">
+                    <div>
+                        <strong>{{ warning.title }}</strong>
+                        <p>{{ warning.text }}</p>
+                    </div>
+                    {% if warning.action_url %}
+                        <a class="button-tertiary button-small" href="{{ warning.action_url }}">{{ warning.action_label }}</a>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+        <details class="inline-details compact-diagnostics">
+            <summary>Environmental coverage</summary>
+            <div class="coverage-grid">
+                <span>Temperature: {{ dashboard.environmental_coverage.temperature.available_rows }} rows{% if dashboard.environmental_coverage.temperature.percent != None %} ({{ dashboard.environmental_coverage.temperature.percent }}%){% endif %}</span>
+                <span>Relative humidity: {{ dashboard.environmental_coverage.humidity.available_rows }} rows{% if dashboard.environmental_coverage.humidity.percent != None %} ({{ dashboard.environmental_coverage.humidity.percent }}%){% endif %}</span>
+                <span>Pressure: {{ dashboard.environmental_coverage.pressure.available_rows }} rows{% if dashboard.environmental_coverage.pressure.percent != None %} ({{ dashboard.environmental_coverage.pressure.percent }}%){% endif %}</span>
+                <span>CO2: {{ dashboard.environmental_coverage.co2.status }}</span>
+            </div>
+        </details>
+        <p class="table-caption"><a class="button-link button-small" href="{% url 'campaigns:campaign_quality' campaign.pk %}">View all diagnostics</a></p>
+        <p class="warning-disclaimer">Diagnostics support research review only and are not regulatory conclusions.</p>
+    {% else %}
+        <p><span class="na-value">No high-priority warnings detected.</span></p>
+    {% endif %}
+</section>

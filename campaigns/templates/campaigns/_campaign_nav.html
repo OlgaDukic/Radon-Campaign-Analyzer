@@ -1,0 +1,17 @@
+<nav class="campaign-tabs" aria-label="Campaign analysis sections">
+    <a class="{% if active_section == 'overview' %}active{% endif %}" href="{% url 'campaigns:campaign_detail' campaign.pk %}">Overview</a>
+    <a class="{% if active_section == 'quality' %}active{% endif %}" href="{% url 'campaigns:campaign_quality' campaign.pk %}">Data Quality</a>
+    <a class="{% if active_section == 'regimes' %}active{% endif %}" href="{% url 'campaigns:campaign_regimes' campaign.pk %}">Regimes & Episodes</a>
+    <a class="{% if active_section == 'prediction' %}active{% endif %}" href="{% url 'campaigns:campaign_prediction' campaign.pk %}">Prediction</a>
+    <a class="{% if active_section == 'sensitivity' %}active{% endif %}" href="{% url 'campaigns:campaign_sensitivity' campaign.pk %}">Sensitivity & Uncertainty</a>
+    <a class="{% if active_section == 'research_context' %}active{% endif %}" href="{% url 'campaigns:campaign_research_context' campaign.pk %}">Research Context</a>
+    <a class="{% if active_section == 'documented_events' %}active{% endif %}" href="{% url 'campaigns:documented_events' campaign.pk %}">Documented Events</a>
+    <a class="{% if active_section == 'provenance' %}active{% endif %}" href="{% url 'campaigns:campaign_provenance' campaign.pk %}">Files & Provenance</a>
+    <a class="{% if active_section == 'reports' %}active{% endif %}" href="{% url 'campaigns:campaign_reports' campaign.pk %}">Reports & Exports</a>
+</nav>
+{% if active_section != "overview" %}<div class="campaign-context-strip">
+    <span><strong>{{ campaign.name }}</strong></span>
+    <span>Location: {{ campaign.location|default:"N/A" }}</span>
+    <span>Report: {% if latest_report %}{{ latest_report.get_status_display }}{% else %}N/A{% endif %}</span>
+    <span>Updated: {% if latest_report %}{{ latest_report.created_at }}{% else %}N/A{% endif %}</span>
+</div>{% endif %}

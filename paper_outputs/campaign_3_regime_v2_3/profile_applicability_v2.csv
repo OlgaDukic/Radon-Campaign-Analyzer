@@ -1,0 +1,9 @@
+field,value
+status,PROFILE_COMPATIBLE_WITH_WARNINGS
+reason_codes,"[""SENSOR_RESOLUTION_UNKNOWN""]"
+profile_name,default_radon_hourly
+profile_version,2026-07-v1
+expected_sampling_interval_minutes,60.0
+irregular_interval_percent,1.58
+gap_count,25
+observation_count,1583

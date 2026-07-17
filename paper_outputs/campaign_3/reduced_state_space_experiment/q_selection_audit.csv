@@ -1,0 +1,17 @@
+experiment,q_candidate,selected,training_cycle,validation_end,validation_metric_rmse,validation_rule,validation_start
+Experiment A,0.1,False,Cycle 1,2024-05-31T23:47:00+00:00,53.031,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment A,1.0,False,Cycle 1,2024-05-31T23:47:00+00:00,35.349,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment A,5.0,False,Cycle 1,2024-05-31T23:47:00+00:00,28.72,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment A,10.0,False,Cycle 1,2024-05-31T23:47:00+00:00,27.591,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment A,25.0,False,Cycle 1,2024-05-31T23:47:00+00:00,26.962,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment A,50.0,False,Cycle 1,2024-05-31T23:47:00+00:00,26.82,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment A,100.0,False,Cycle 1,2024-05-31T23:47:00+00:00,26.752,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment A,250.0,True,Cycle 1,2024-05-31T23:47:00+00:00,26.637,blocked chronological validation inside training cycle only,2024-05-29T14:47:00+00:00
+Experiment B,0.1,False,Cycle 2,2024-06-15T23:44:00+00:00,51.337,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00
+Experiment B,1.0,False,Cycle 2,2024-06-15T23:44:00+00:00,29.933,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00
+Experiment B,5.0,False,Cycle 2,2024-06-15T23:44:00+00:00,18.669,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00
+Experiment B,10.0,False,Cycle 2,2024-06-15T23:44:00+00:00,16.068,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00
+Experiment B,25.0,False,Cycle 2,2024-06-15T23:44:00+00:00,14.131,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00
+Experiment B,50.0,False,Cycle 2,2024-06-15T23:44:00+00:00,13.457,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00
+Experiment B,100.0,True,Cycle 2,2024-06-15T23:44:00+00:00,13.238,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00
+Experiment B,250.0,False,Cycle 2,2024-06-15T23:44:00+00:00,13.365,blocked chronological validation inside training cycle only,2024-06-13T21:44:00+00:00

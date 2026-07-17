@@ -1,0 +1,7 @@
+cycle_label,interpretation_guardrail,intervention_associated_increase_in_apparent_relaxation,kappa_accumulation,kappa_rapid_removal,rapid_fit
+Cycle 1,"Not ventilation rate, not ACH, not measured air exchange.",2.361883,0.043411,2.405294,rapid_removal_D1_free_equilibrium
+Cycle 1,"Not ventilation rate, not ACH, not measured air exchange.",1.749665,0.043411,1.793076,D2_fixed_pre_event_baseline_floor
+Cycle 1,"Not ventilation rate, not ACH, not measured air exchange.",1.784184,0.043411,1.827595,D3_fixed_post_event_floor
+Cycle 2,"Not ventilation rate, not ACH, not measured air exchange.",0.637724,0.024914,0.662638,rapid_removal_D1_free_equilibrium
+Cycle 2,"Not ventilation rate, not ACH, not measured air exchange.",0.820375,0.024914,0.845289,D2_fixed_pre_event_baseline_floor
+Cycle 2,"Not ventilation rate, not ACH, not measured air exchange.",0.732443,0.024914,0.757357,D3_fixed_post_event_floor

@@ -1,0 +1,31 @@
+Bias,Experiment,Horizon,MAE,Maximum AE,Median AE,Model,N,RMSE,Test cycle,Train cycle
+-0.007,Experiment A,1h,13.895,125.337,8.481,Generic local-level Kalman,167,21.402,Cycle 2,Cycle 1
+0.668,Experiment A,1h,13.088,75.656,9.19,Reduced S.I.R.E.M.-informed Kalman,167,18.786,Cycle 2,Cycle 1
+-0.012,Experiment A,1h,14.814,108.0,9.0,Persistence,167,22.293,Cycle 2,Cycle 1
+0.066,Experiment A,1h,13.838,150.333,8.667,Rolling mean 3,167,23.13,Cycle 2,Cycle 1
+0.526,Experiment A,1h,14.374,117.508,9.142,Ridge autoregressive,167,21.662,Cycle 2,Cycle 1
+0.096,Experiment A,3h,17.854,186.951,10.762,Generic local-level Kalman,165,31.255,Cycle 2,Cycle 1
+2.125,Experiment A,3h,16.401,160.967,11.038,Reduced S.I.R.E.M.-informed Kalman,165,24.533,Cycle 2,Cycle 1
+0.079,Experiment A,3h,18.309,193.0,12.0,Persistence,165,31.354,Cycle 2,Cycle 1
+0.194,Experiment A,3h,18.828,183.667,10.0,Rolling mean 3,165,33.672,Cycle 2,Cycle 1
+1.403,Experiment A,3h,19.053,175.259,11.706,Ridge autoregressive,165,31.246,Cycle 2,Cycle 1
+0.356,Experiment A,6h,25.829,214.951,15.152,Generic local-level Kalman,162,44.171,Cycle 2,Cycle 1
+5.945,Experiment A,6h,24.704,205.238,17.155,Reduced S.I.R.E.M.-informed Kalman,162,38.636,Cycle 2,Cycle 1
+0.358,Experiment A,6h,25.914,221.0,14.5,Persistence,162,44.404,Cycle 2,Cycle 1
+0.422,Experiment A,6h,26.364,211.667,14.5,Rolling mean 3,162,45.395,Cycle 2,Cycle 1
+2.82,Experiment A,6h,26.506,204.409,16.76,Ridge autoregressive,162,42.702,Cycle 2,Cycle 1
+0.011,Experiment B,1h,14.029,182.567,8.166,Generic local-level Kalman,191,22.602,Cycle 1,Cycle 2
+0.389,Experiment B,1h,13.987,177.85,9.433,Reduced S.I.R.E.M.-informed Kalman,191,21.633,Cycle 1,Cycle 2
+0.01,Experiment B,1h,14.775,182.0,10.0,Persistence,191,23.102,Cycle 1,Cycle 2
+-0.01,Experiment B,1h,14.583,180.0,8.0,Rolling mean 3,191,24.915,Cycle 1,Cycle 2
+-0.722,Experiment B,1h,14.604,180.548,9.519,Ridge autoregressive,191,23.086,Cycle 1,Cycle 2
+0.057,Experiment B,3h,18.34,209.42,9.454,Generic local-level Kalman,189,32.532,Cycle 1,Cycle 2
+0.712,Experiment B,3h,18.523,197.495,13.422,Reduced S.I.R.E.M.-informed Kalman,189,28.269,Cycle 1,Cycle 2
+0.053,Experiment B,3h,19.026,217.0,10.0,Persistence,189,33.296,Cycle 1,Cycle 2
+0.049,Experiment B,3h,18.843,193.0,9.667,Rolling mean 3,189,33.539,Cycle 1,Cycle 2
+-1.86,Experiment B,3h,20.191,205.643,13.073,Ridge autoregressive,189,32.884,Cycle 1,Cycle 2
+0.069,Experiment B,6h,24.737,212.42,13.588,Generic local-level Kalman,186,41.931,Cycle 1,Cycle 2
+2.587,Experiment B,6h,26.869,195.942,20.86,Reduced S.I.R.E.M.-informed Kalman,186,38.336,Cycle 1,Cycle 2
+0.075,Experiment B,6h,24.806,220.0,14.0,Persistence,186,42.545,Cycle 1,Cycle 2
+0.039,Experiment B,6h,25.308,201.0,12.667,Rolling mean 3,186,42.632,Cycle 1,Cycle 2
+-3.943,Experiment B,6h,28.083,192.065,20.179,Ridge autoregressive,186,41.084,Cycle 1,Cycle 2

@@ -8,6 +8,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 
 from .paper_outputs import build_row_reconciliation_summary
 from .prediction_insights import build_prediction_insights
+from .research_context import research_context_rows
 
 
 SHEETS = [
@@ -36,6 +37,29 @@ SHEETS = [
     "SIREM Readiness",
     "Reproducibility Config",
     "Row Reconciliation Summary",
+    "Campaign Summary",
+    "Data Quality Summary",
+    "Intervals and Gaps",
+    "Measurement Regimes",
+    "Episodes",
+    "Regime Parameters",
+    "Regime Confidence",
+    "Important Episodes",
+    "Feature Diagnostics",
+    "Sudden Event Audit",
+    "Episode Reasons",
+    "Elevated Period Phases",
+    "Profile Applicability",
+    "Adaptive Recommendations",
+    "Standardized Summary",
+    "Transition Merge Audit",
+    "Level Sensitivity",
+    "Dynamic Sensitivity",
+    "Prediction Summary",
+    "Prediction Intervals",
+    "Largest Errors",
+    "Methodology Metadata",
+    "Research Context",
 ]
 
 
@@ -69,6 +93,60 @@ def build_campaign_report_workbook(campaign, report=None):
     _write_sirem_readiness(workbook.create_sheet("SIREM Readiness"), summary)
     _write_reproducibility_config(workbook.create_sheet("Reproducibility Config"), summary)
     _write_row_reconciliation_summary(workbook.create_sheet("Row Reconciliation Summary"), summary)
+    _write_campaign_summary(workbook.create_sheet("Campaign Summary"), campaign, report, summary)
+    _write_data_quality_summary(workbook.create_sheet("Data Quality Summary"), summary)
+    _write_intervals_and_gaps(workbook.create_sheet("Intervals and Gaps"), summary)
+    _write_measurement_regimes(workbook.create_sheet("Measurement Regimes"), summary)
+    _write_episodes(workbook.create_sheet("Episodes"), summary)
+    _write_regime_parameters(workbook.create_sheet("Regime Parameters"), summary)
+    _write_regime_confidence(workbook.create_sheet("Regime Confidence"), summary)
+    _write_important_episodes(workbook.create_sheet("Important Episodes"), summary)
+    _write_feature_diagnostics(workbook.create_sheet("Feature Diagnostics"), summary)
+    _write_sudden_event_audit(workbook.create_sheet("Sudden Event Audit"), summary)
+    _write_episode_reasons(workbook.create_sheet("Episode Reasons"), summary)
+    _write_elevated_period_phases(workbook.create_sheet("Elevated Period Phases"), summary)
+    _write_profile_applicability(workbook.create_sheet("Profile Applicability"), summary)
+    _write_adaptive_recommendations(workbook.create_sheet("Adaptive Recommendations"), summary)
+    _write_standardized_summary(workbook.create_sheet("Standardized Summary"), summary)
+    _write_transition_merge_audit(workbook.create_sheet("Transition Merge Audit"), summary)
+    _write_level_sensitivity(workbook.create_sheet("Level Sensitivity"), summary)
+    _write_dynamic_sensitivity(workbook.create_sheet("Dynamic Sensitivity"), summary)
+    _write_prediction_summary_v2(workbook.create_sheet("Prediction Summary"), summary)
+    _write_prediction_intervals(workbook.create_sheet("Prediction Intervals"), summary)
+    _write_largest_errors(workbook.create_sheet("Largest Errors"), summary)
+    _write_methodology_metadata(workbook.create_sheet("Methodology Metadata"), summary)
+    _write_research_context(workbook.create_sheet("Research Context"), campaign)
+
+    for worksheet in workbook.worksheets:
+        _format_sheet(worksheet)
+
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return output
+
+
+def build_compact_campaign_report_workbook(campaign, report=None):
+    summary = report.summary_json if report and report.summary_json else {}
+    workbook = Workbook()
+    workbook.remove(workbook.active)
+
+    _write_summary(workbook.create_sheet("Summary"), campaign, report, summary)
+    _write_segments(workbook.create_sheet("Segments"), summary)
+    _write_regime_counts(workbook.create_sheet("Regime Counts"), summary)
+    _write_prediction_metrics(workbook.create_sheet("Prediction Metrics"), summary)
+    _write_prediction_by_regime(workbook.create_sheet("Prediction by Regime"), summary)
+    _write_gaps(workbook.create_sheet("Gaps"), summary)
+    _write_ingestion_diagnostics(workbook.create_sheet("Ingestion Diagnostics"), summary)
+    _write_source_file_inventory(workbook.create_sheet("Source File Inventory"), summary)
+    _write_canonical_dataset_summary(workbook.create_sheet("Canonical Dataset Summary"), summary)
+    _write_quality_flags(workbook.create_sheet("Quality Flags"), summary)
+    _write_sampling_diagnostics(workbook.create_sheet("Sampling Diagnostics"), summary)
+    _write_prediction_readiness(workbook.create_sheet("Prediction Readiness"), summary)
+    _write_sirem_readiness(workbook.create_sheet("SIREM Readiness"), summary)
+    _write_reproducibility_config(workbook.create_sheet("Reproducibility Config"), summary)
+    _write_row_reconciliation_summary(workbook.create_sheet("Row Reconciliation Summary"), summary)
+    _write_research_context(workbook.create_sheet("Research Context"), campaign)
 
     for worksheet in workbook.worksheets:
         _format_sheet(worksheet)
@@ -446,6 +524,373 @@ def _write_row_reconciliation_summary(worksheet, summary):
         worksheet.append([key, _stringify(value)])
 
 
+def _write_campaign_summary(worksheet, campaign, report, summary):
+    rows = {
+        "campaign_id": campaign.id,
+        "campaign_name": campaign.name,
+        "report_id": report.id if report else None,
+        "report_schema_version": summary.get("report_schema_version", "legacy"),
+        "measurement_count": summary.get("measurement_count"),
+        "segment_count": summary.get("segment_count"),
+        "episode_count": len(summary.get("episodes", [])),
+        "exploratory_notice": "Research prototype output; not certified radon risk assessment.",
+    }
+    worksheet.append(["Field", "Value"])
+    for key, value in rows.items():
+        worksheet.append([key, _stringify(value)])
+
+
+def _write_data_quality_summary(worksheet, summary):
+    rows = summary.get("quality_flag_details", [])
+    _write_dict_rows(
+        worksheet,
+        rows,
+        [
+            "quality_flag",
+            "flag_occurrences",
+            "unique_raw_measurements_affected",
+            "unique_canonical_measurements_affected",
+            "hourly_or_analysis_rows_affected",
+            "percentage_of_measurements_affected",
+            "meaning",
+        ],
+    )
+
+
+def _write_intervals_and_gaps(worksheet, summary):
+    rows = summary.get("time_continuity", {}).get("intervals", [])
+    _write_dict_rows(worksheet, rows, ["from", "to", "observed_interval_minutes", "expected_interval_minutes", "interval_class", "creates_segment_boundary", "segment_boundary_reason"])
+
+
+def _write_measurement_regimes(worksheet, summary):
+    rows = summary.get("measurement_regimes_v2", [])
+    _write_dict_rows(
+        worksheet,
+        rows,
+        [
+            "timestamp",
+            "radon_bq_m3",
+            "segment_id",
+            "observed_interval_hours",
+            "concentration_level",
+            "candidate_dynamic_state",
+            "confirmed_dynamic_state",
+            "legacy_regime",
+            "adjacent_slope_bq_m3_per_hour",
+            "short_slope_bq_m3_per_hour",
+            "medium_slope_bq_m3_per_hour",
+            "slope_acceleration_bq_m3_per_hour2",
+            "rolling_median_radon",
+            "local_variability_mad",
+            "local_variability_normalized",
+            "short_valid_observation_count",
+            "medium_valid_observation_count",
+            "distance_to_previous_gap_observations",
+            "distance_to_previous_gap_hours",
+            "distance_to_next_gap_observations",
+            "distance_to_next_gap_hours",
+            "raw_smoothed_disagreement",
+            "confidence_score",
+            "confidence_label",
+            "confidence_reasons",
+            "dynamic_reason_codes",
+            "quality_flags",
+        ],
+    )
+
+
+def _write_episodes(worksheet, summary):
+    rows = summary.get("episodes", [])
+    _write_dict_rows(
+        worksheet,
+        rows,
+        [
+            "campaign_id",
+            "analysis_report_id",
+            "segment_id",
+            "episode_sequence_number",
+            "episode_type",
+            "legacy_episode_label",
+            "start",
+            "end",
+            "duration_hours",
+            "measurement_count",
+            "starting_radon",
+            "ending_radon",
+            "min_radon",
+            "max_radon",
+            "mean_radon",
+            "median_radon",
+            "absolute_concentration_change",
+            "relative_concentration_change_percent",
+            "mean_adjacent_slope_bq_m3_per_hour",
+            "robust_episode_slope_bq_m3_per_hour",
+            "mean_slope_bq_m3_per_hour",
+            "maximum_positive_slope",
+            "maximum_negative_slope",
+            "local_variability",
+            "concentration_level_distribution",
+            "dynamic_state_distribution",
+            "distance_from_previous_gap_hours",
+            "distance_to_next_gap_hours",
+            "quality_status",
+            "confidence_score",
+            "confidence_category",
+            "confidence_reason_codes",
+            "dominant_reason_codes",
+            "reason_code_summary",
+            "positive_confidence_components",
+            "negative_confidence_components",
+            "start_transition_reasons",
+            "end_transition_reasons",
+            "regime_algorithm_version",
+            "episode_algorithm_version",
+            "parameter_set_identifier",
+        ],
+    )
+
+
+def _write_regime_parameters(worksheet, summary):
+    worksheet.append(["Field", "Value"])
+    for key, value in summary.get("regime_parameters", {}).items():
+        worksheet.append([key, _stringify(value)])
+
+
+def _write_regime_confidence(worksheet, summary):
+    confidence = summary.get("regime_confidence_summary") or {}
+    worksheet.append(["Section", "Key", "Value"])
+    for key, value in (confidence.get("confidence_category_counts") or {}).items():
+        worksheet.append(["confidence_category_counts", key, _stringify(value)])
+    for state, distribution in (confidence.get("confidence_distribution_by_dynamic_state") or {}).items():
+        worksheet.append(["confidence_distribution_by_dynamic_state", state, _stringify(distribution)])
+    for episode_type, distribution in (confidence.get("confidence_distribution_by_episode_type") or {}).items():
+        worksheet.append(["confidence_distribution_by_episode_type", episode_type, _stringify(distribution)])
+    for reason, count in (confidence.get("reason_code_counts") or {}).items():
+        worksheet.append(["reason_code_counts", reason, _stringify(count)])
+    worksheet.append(["low_confidence_row_count", "rows", _stringify(confidence.get("low_confidence_row_count"))])
+    worksheet.append(["low_confidence_episode_count", "episodes", _stringify(confidence.get("low_confidence_episode_count"))])
+    if worksheet.max_row == 1:
+        worksheet.append(["note", "N/A", "No regime confidence summary available"])
+
+
+def _write_important_episodes(worksheet, summary):
+    rows = summary.get("important_episodes", [])
+    _write_dict_rows(
+        worksheet,
+        rows,
+        [
+            "start",
+            "end",
+            "episode_type",
+            "starting_radon",
+            "ending_radon",
+            "max_radon",
+            "duration_hours",
+            "robust_episode_slope_bq_m3_per_hour",
+            "confidence_score",
+            "confidence_category",
+            "confidence_reason_codes",
+            "distance_from_previous_gap_hours",
+            "distance_to_next_gap_hours",
+        ],
+    )
+
+
+def _write_feature_diagnostics(worksheet, summary):
+    _write_dict_rows(
+        worksheet,
+        summary.get("feature_distribution_diagnostics", []),
+        ["feature", "sample_count", "q01", "q05", "q10", "q25", "q50", "q75", "q90", "q95", "q99"],
+    )
+
+
+def _write_sudden_event_audit(worksheet, summary):
+    _write_dict_rows(
+        worksheet,
+        summary.get("sudden_event_audit", []),
+        [
+            "timestamp",
+            "segment_id",
+            "event_state",
+            "previous_radon",
+            "current_radon",
+            "observed_interval_hours",
+            "absolute_change",
+            "relative_change_percent",
+            "adjacent_slope_bq_m3_per_hour",
+            "short_slope_bq_m3_per_hour",
+            "threshold_used_bq_m3_per_hour",
+            "trigger_rule",
+            "threshold_satisfied",
+        ],
+    )
+
+
+def _write_episode_reasons(worksheet, summary):
+    _write_dict_rows(
+        worksheet,
+        summary.get("episode_reason_summary", []),
+        ["segment_id", "episode_sequence_number", "episode_type", "reason_code", "row_count", "row_percent"],
+    )
+
+
+def _write_elevated_period_phases(worksheet, summary):
+    _write_dict_rows(
+        worksheet,
+        summary.get("elevated_period_phase_table", []),
+        [
+            "inspection_period",
+            "phase_start",
+            "phase_end",
+            "concentration_level_distribution",
+            "dynamic_state_distribution",
+            "episode_type",
+            "start_radon",
+            "end_radon",
+            "min_radon",
+            "max_radon",
+            "robust_slope",
+            "local_variability",
+            "confidence",
+            "reason_codes",
+        ],
+    )
+
+
+def _write_profile_applicability(worksheet, summary):
+    worksheet.append(["Field", "Value"])
+    for key, value in (summary.get("profile_applicability") or {}).items():
+        worksheet.append([key, _stringify(value)])
+
+
+def _write_adaptive_recommendations(worksheet, summary):
+    _write_dict_rows(
+        worksheet,
+        summary.get("adaptive_recommendations", []),
+        ["parameter", "active_threshold", "recommended_threshold", "source", "override_accepted", "note"],
+    )
+
+
+def _write_standardized_summary(worksheet, summary):
+    worksheet.append(["Field", "Value"])
+    for key, value in (summary.get("standardized_campaign_summary") or {}).items():
+        worksheet.append([key, _stringify(value)])
+
+
+def _write_transition_merge_audit(worksheet, summary):
+    _write_dict_rows(
+        worksheet,
+        summary.get("transition_merge_audit", []),
+        ["merge_id", "segment_id", "episode_type", "original_episode_ids", "merge_decision", "merge_reason", "resulting_episode_id"],
+    )
+
+
+def _write_level_sensitivity(worksheet, summary):
+    rows = summary.get("level_sensitivity", [])
+    _write_dict_rows(worksheet, rows, ["threshold_multiplier", "level_counts", "level_percentages", "agreement_with_baseline_percent", "elevated_or_high_observations"])
+
+
+def _write_dynamic_sensitivity(worksheet, summary):
+    rows = summary.get("dynamic_sensitivity", [])
+    _write_dict_rows(
+        worksheet,
+        rows,
+        [
+            "parameter_set_identifier",
+            "slope_threshold_multiplier",
+            "short_window_observations",
+            "medium_window_observations",
+            "minimum_state_persistence_observations",
+            "variability_threshold_bq_m3",
+            "state_counts",
+            "state_duration_hours",
+            "state_percentages",
+            "episode_count_by_type",
+            "episode_transition_count",
+            "agreement_with_baseline_percent",
+            "cohen_kappa",
+            "baseline_episode_preservation_percent",
+            "metric_note",
+        ],
+    )
+
+
+def _write_prediction_summary_v2(worksheet, summary):
+    rows = summary.get("prediction_summary_v2", [])
+    _write_dict_rows(worksheet, rows, ["horizon", "model", "samples", "mae", "rmse", "bias", "median_absolute_error"])
+
+
+def _write_prediction_intervals(worksheet, summary):
+    rows = summary.get("prediction_intervals", [])
+    _write_dict_rows(worksheet, rows, ["model", "nominal_coverage", "empirical_coverage", "average_interval_width", "residual_count", "method", "note"])
+
+
+def _write_largest_errors(worksheet, summary):
+    rows = summary.get("largest_errors_v2", summary.get("prediction_errors", []))
+    _write_dict_rows(worksheet, rows, ["timestamp", "horizon", "model", "actual_radon", "predicted_radon", "absolute_error", "regime", "segment_id"])
+
+
+def _write_methodology_metadata(worksheet, summary):
+    config = summary.get("analysis_config", {})
+    params = summary.get("regime_parameters", {})
+    metadata = {
+        "software_version": summary.get("reproducibility_config", {}).get("app_version_or_git_commit"),
+        "algorithm_version": params.get("algorithm_version"),
+        "run_timestamp": summary.get("reproducibility_config", {}).get("run_timestamp"),
+        "sampling_interval": summary.get("time_continuity", {}).get("summary", {}).get("expected_sampling_interval_minutes"),
+        "gap_thresholds": {
+            "minor_interval_tolerance": config.get("minor_interval_tolerance"),
+            "gap_tolerance_multiplier": config.get("gap_tolerance_multiplier"),
+            "short_gap_multiplier": config.get("short_gap_multiplier"),
+            "moderate_gap_multiplier": config.get("moderate_gap_multiplier"),
+        },
+        "concentration_thresholds": {
+            "low": config.get("concentration_low_threshold_bq_m3"),
+            "high": config.get("concentration_high_threshold_bq_m3"),
+        },
+        "slope_thresholds": {
+            "stable": config.get("stable_slope_bq_m3_per_hour"),
+            "trend": config.get("trend_slope_bq_m3_per_hour"),
+            "sudden": config.get("sudden_change_bq_m3_per_hour"),
+        },
+        "rolling_windows": {
+            "short": config.get("short_window_observations"),
+            "medium": config.get("medium_window_observations"),
+        },
+        "persistence_rules": config.get("minimum_state_persistence_observations"),
+        "hysteresis_parameters": config.get("concentration_hysteresis_bq_m3"),
+        "confidence_score_rules": "deterministic score based on slope strength, duration, variability, and proximity to gaps; not probability",
+        "confidence_formula": params.get("confidence_formula"),
+        "prediction_split_configuration": summary.get("prediction_v2", {}).get("validation_policy", "chronological train/test split"),
+        "random_seed": "N/A deterministic rules",
+    }
+    worksheet.append(["Field", "Value"])
+    for key, value in metadata.items():
+        worksheet.append([key, _stringify(value)])
+
+
+def _write_research_context(worksheet, campaign):
+    worksheet.append(["Section", "Field", "Value", "Evidence status"])
+    for row in research_context_rows(campaign):
+        worksheet.append(
+            [
+                row.get("section"),
+                row.get("field"),
+                _blank(row.get("value")),
+                _blank(row.get("evidence_status")),
+            ]
+        )
+
+
+def _write_dict_rows(worksheet, rows, headers):
+    worksheet.append(headers)
+    if not rows:
+        worksheet.append(["N/A"] + [""] * (len(headers) - 1))
+        return
+    for row in rows:
+        worksheet.append([_stringify(row.get(header)) for header in headers])
+
+
 def _format_sheet(worksheet):
     worksheet.freeze_panes = "A2"
     if worksheet.max_row and worksheet.max_column:
@@ -468,6 +913,12 @@ def _format_sheet(worksheet):
 def _value(value, fallback="N/A"):
     if value is None or value == "":
         return fallback
+    return value
+
+
+def _blank(value):
+    if value is None or value == "":
+        return None
     return value
 
 

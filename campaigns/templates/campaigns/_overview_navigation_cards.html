@@ -1,0 +1,16 @@
+<section class="dashboard-panel">
+    <div class="panel-title">
+        <div>
+            <h3>Explore Details</h3>
+            <p class="section-subtitle">Dedicated research pages keep technical outputs separate from the summary view.</p>
+        </div>
+    </div>
+    <div class="navigation-card-grid">
+        <article class="navigation-card"><div class="navigation-icon" aria-hidden="true">Quality</div><h3>Data Quality</h3><p>Review rows, gaps, conflicts and parser diagnostics.</p><a class="button-secondary button-small card-action" href="{% url 'campaigns:campaign_quality' campaign.pk %}">Open Data Quality</a></article>
+        <article class="navigation-card"><div class="navigation-icon" aria-hidden="true">Regimes</div><h3>Regimes & Episodes</h3><p>Explore concentration levels, dynamic states and detected episodes.</p><a class="button-secondary button-small card-action" href="{% url 'campaigns:campaign_regimes' campaign.pk %}">Open regimes</a></article>
+        <article class="navigation-card"><div class="navigation-icon" aria-hidden="true">Model</div><h3>Prediction</h3><p>Inspect model metrics, regime-specific performance and largest errors.</p><a class="button-secondary button-small card-action" href="{% url 'campaigns:campaign_prediction' campaign.pk %}">View prediction results</a></article>
+        <article class="navigation-card"><div class="navigation-icon" aria-hidden="true">Profile</div><h3>Sensitivity & Confidence</h3><p>Review profile applicability, recommendations and confidence summaries.</p><a class="button-secondary button-small card-action" href="{% url 'campaigns:campaign_sensitivity' campaign.pk %}">Review sensitivity</a></article>
+        <article class="navigation-card"><div class="navigation-icon" aria-hidden="true">Files</div><h3>Files & Provenance</h3><p>View uploaded files, source metadata and reproducibility context.</p><a class="button-secondary button-small card-action" href="{% url 'campaigns:campaign_provenance' campaign.pk %}">View source files</a></article>
+        <article class="navigation-card"><div class="navigation-icon" aria-hidden="true">Exports</div><h3>Reports & Exports</h3><p>Open Excel reports, CSV outputs and validation artifacts.</p><a class="button-secondary button-small card-action" href="{% url 'campaigns:campaign_reports' campaign.pk %}">Open reports</a></article>
+    </div>
+</section>

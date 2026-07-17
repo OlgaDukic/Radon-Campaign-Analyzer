@@ -1,0 +1,19 @@
+field,value
+campaign_id,3
+run_timestamp,2026-07-16T11:45:38.020436+00:00
+app_version_or_git_commit,ffd7455
+timezone,Europe/Rome
+input_source_file_names,"[""RadonEyePlus2_Salerno_2024_reconstructed.csv""]"
+canonicalisation_rules,"[""sort_by_utc_timestamp"", ""deduplicate_exact_timestamp_value_rows"", ""flag_duplicate_conflicts"", ""merge_environmental_completeness_when_radon_agrees""]"
+resampling_interval,1H
+gap_tolerance_multiplier,1.5
+completeness_threshold,0.75
+regime_thresholds,"{""low_radon_bq_m3"": 100.0, ""elevated_radon_bq_m3"": 200.0, ""high_radon_bq_m3"": 300.0, ""stable_change_bq_m3"": 20.0, ""rising_change_bq_m3"": 30.0, ""falling_change_bq_m3"": -30.0, ""sudden_change_bq_m3"": 100.0, ""minimum_segment_size"": 3, ""quality_limited_sample_count"": 3}"
+sensitivity_multipliers,"[0.8, 0.9, 1.0, 1.1, 1.2]"
+prediction_horizons,"[""1h"", ""6h""]"
+train_test_split_policy,chronological_train_test_split
+prediction_evaluation_description,chronological train/test split; training observations precede test observations in time
+included_quality_flags,all non-excluded flags retained for reporting
+excluded_prediction_quality_flags,"[""DUPLICATE_CONFLICT"", ""LOW_COMPLETENESS"", ""DST_AMBIGUOUS""]"
+raw_records,1583
+canonical_records,1583

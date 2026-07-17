@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from campaigns.models import Campaign
 from campaigns.services.analysis import run_campaign_analysis
-from campaigns.services.analysis_config import AnalysisConfig
+from campaigns.services.analysis_profiles import build_config
 from campaigns.services.excel_export import build_campaign_report_workbook
 from campaigns.services.paper_outputs import enrich_paper_summary, write_paper_output_package
 
@@ -20,6 +20,8 @@ def run_paper1_analysis(
     run_sensitivity: bool = True,
     export_excel: bool = True,
     output_dir: str | None = None,
+    profile: str = "default_radon_hourly",
+    config_overrides: dict | None = None,
     requested_by: str | None = None,
 ) -> dict:
     try:
@@ -29,7 +31,9 @@ def run_paper1_analysis(
             return _failed(campaign, timezone, resample, gap_tolerance, "Upload at least one monitoring file before running Paper 1 analysis.")
 
         output_path = _output_dir(campaign_id, output_dir)
-        config = AnalysisConfig(
+        config = build_config(
+            profile_name=profile,
+            overrides=config_overrides or {},
             timezone_name=timezone,
             resample_interval=resample,
             gap_tolerance_multiplier=float(gap_tolerance),
@@ -54,6 +58,8 @@ def run_paper1_analysis(
             run_sensitivity,
             export_excel,
             output_path,
+            profile,
+            config_overrides or {},
         )
         package = write_paper_output_package(
             campaign,
@@ -93,6 +99,8 @@ def run_paper1_analysis(
             "run_sensitivity": run_sensitivity,
             "export_excel": export_excel,
             "output_dir": output_dir or _relative_output_dir(campaign_id),
+            "profile": profile,
+            "config_overrides": config_overrides or {},
             "warnings": [],
             "error_message": str(exc),
         }
@@ -201,7 +209,7 @@ def _warnings(quality):
     ]
 
 
-def _command_used(campaign_id, timezone_name, resample, gap_tolerance, rebuild_canonical, run_sensitivity, export_excel, output_path):
+def _command_used(campaign_id, timezone_name, resample, gap_tolerance, rebuild_canonical, run_sensitivity, export_excel, output_path, profile, config_overrides):
     parts = [
         "python manage.py analyze_campaign",
         str(campaign_id),
@@ -218,6 +226,9 @@ def _command_used(campaign_id, timezone_name, resample, gap_tolerance, rebuild_c
         parts.append("--run-sensitivity")
     if export_excel:
         parts.append("--export-excel")
+    parts.extend(["--profile", profile])
+    for key, value in sorted((config_overrides or {}).items()):
+        parts.extend(["--config-override", f"{key}={value}"])
     parts.extend(["--output-dir", _relative_path(output_path)])
     return " ".join(parts)
 

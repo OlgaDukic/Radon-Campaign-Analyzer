@@ -1,0 +1,5 @@
+cycle_label,endpoint_kappa_h_minus_1,floor_concentration_bq_m3,floor_source,half_time_h,kappa_h_minus_1,rmse,scenario,use_status
+Cycle 1,0.785296,12.575758,pre_event_baseline_mean,0.386569,1.793076,9.867962,D2,pre_event_available_floor_scenario
+Cycle 1,0.800314,13.565217,post_event_mean_retrospective,0.379267,1.827595,9.375651,D3,retrospective_future_informed_descriptive_fit
+Cycle 2,NOT_IDENTIFIABLE,23.909091,pre_event_baseline_mean,0.820012,0.845289,21.288989,D2,pre_event_available_floor_scenario
+Cycle 2,NOT_IDENTIFIABLE,13.347826,post_event_mean_retrospective,0.915219,0.757357,18.764395,D3,retrospective_future_informed_descriptive_fit

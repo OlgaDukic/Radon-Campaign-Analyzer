@@ -1,0 +1,8 @@
+field,value
+raw_records,45977
+unique_timestamps,36803
+exact_duplicates_removed,9165
+conflicts,6
+overlap_records,18346
+canonical_valid_records,36797
+canonical_invalid_or_excluded_records,6

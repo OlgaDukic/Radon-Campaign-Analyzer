@@ -1,0 +1,7 @@
+Experiment,Future-observation empirical coverage,Future-observation mean interval width,Horizon,Interval score,Latent-state empirical coverage,N,Nominal coverage
+Experiment A,0.952,80.514,1h,110.406,0.946,167,0.95
+Experiment A,0.982,116.295,3h,152.006,0.97,165,0.95
+Experiment A,0.969,153.19,6h,258.416,0.969,162,0.95
+Experiment B,0.911,62.892,1h,120.202,0.812,191,0.95
+Experiment B,0.921,81.798,3h,173.695,0.905,189,0.95
+Experiment B,0.919,102.016,6h,255.512,0.903,186,0.95

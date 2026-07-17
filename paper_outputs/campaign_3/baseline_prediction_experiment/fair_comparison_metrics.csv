@@ -1,0 +1,19 @@
+bias,common_target_count,difference_reason,experiment,horizon,mae,model,model_specific_target_count,relative_mae_improvement_vs_persistence,relative_rmse_improvement_vs_persistence,rmse,test_cycle,training_cycle
+-0.012,167,same valid target set,Experiment A,1h,14.814,persistence,167,0.0,0.0,22.293,Cycle 2,Cycle 1
+0.066,167,same valid target set,Experiment A,1h,13.838,rolling_mean_3,167,6.588,-3.755,23.13,Cycle 2,Cycle 1
+0.526,167,same valid target set,Experiment A,1h,14.374,ridge_autoregressive,167,2.97,2.83,21.662,Cycle 2,Cycle 1
+0.079,165,same valid target set,Experiment A,3h,18.309,persistence,165,0.0,0.0,31.354,Cycle 2,Cycle 1
+0.194,165,same valid target set,Experiment A,3h,18.828,rolling_mean_3,165,-2.835,-7.393,33.672,Cycle 2,Cycle 1
+1.403,165,same valid target set,Experiment A,3h,19.053,ridge_autoregressive,165,-4.064,0.344,31.246,Cycle 2,Cycle 1
+0.358,162,same valid target set,Experiment A,6h,25.914,persistence,162,0.0,0.0,44.404,Cycle 2,Cycle 1
+0.422,162,same valid target set,Experiment A,6h,26.364,rolling_mean_3,162,-1.737,-2.232,45.395,Cycle 2,Cycle 1
+2.82,162,same valid target set,Experiment A,6h,26.506,ridge_autoregressive,162,-2.284,3.833,42.702,Cycle 2,Cycle 1
+0.01,191,same valid target set,Experiment B,1h,14.775,persistence,191,0.0,0.0,23.102,Cycle 1,Cycle 2
+-0.01,191,same valid target set,Experiment B,1h,14.583,rolling_mean_3,191,1.299,-7.848,24.915,Cycle 1,Cycle 2
+-0.722,191,same valid target set,Experiment B,1h,14.604,ridge_autoregressive,191,1.157,0.069,23.086,Cycle 1,Cycle 2
+0.053,189,same valid target set,Experiment B,3h,19.026,persistence,189,0.0,0.0,33.296,Cycle 1,Cycle 2
+0.049,189,same valid target set,Experiment B,3h,18.843,rolling_mean_3,189,0.962,-0.73,33.539,Cycle 1,Cycle 2
+-1.86,189,same valid target set,Experiment B,3h,20.191,ridge_autoregressive,189,-6.123,1.237,32.884,Cycle 1,Cycle 2
+0.075,186,same valid target set,Experiment B,6h,24.806,persistence,186,0.0,0.0,42.545,Cycle 1,Cycle 2
+0.039,186,same valid target set,Experiment B,6h,25.308,rolling_mean_3,186,-2.024,-0.204,42.632,Cycle 1,Cycle 2
+-3.943,186,same valid target set,Experiment B,6h,28.083,ridge_autoregressive,186,-13.211,3.434,41.084,Cycle 1,Cycle 2

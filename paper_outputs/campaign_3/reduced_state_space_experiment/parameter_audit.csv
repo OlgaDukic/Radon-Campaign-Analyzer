@@ -1,0 +1,5 @@
+C_eq_bq_m3,a,b,estimation_rule,experiment,flags,identifiability_flag,kappa_h_minus_1,regime,sample_count,training_cycle
+175.213278,0.983516,2.88813,constrained least squares on training cycle adjacent observations only,Experiment A,FIT_OK,IDENTIFIABLE_REDUCED_FORM,0.016621,closed_reference,186,Cycle 1
+27.0,0.0,27.0,constrained least squares on training cycle adjacent observations only,Experiment A,SMALL_PHASE_SAMPLE|PARAMETER_NEAR_BOUNDARY,IDENTIFIABLE_REDUCED_FORM,,rapid_removal,2,Cycle 1
+151.717576,0.976735,3.529647,constrained least squares on training cycle adjacent observations only,Experiment B,FIT_OK,IDENTIFIABLE_REDUCED_FORM,0.023539,closed_reference,161,Cycle 2
+18.357444,0.136847,15.845286,constrained least squares on training cycle adjacent observations only,Experiment B,SMALL_PHASE_SAMPLE,IDENTIFIABLE_REDUCED_FORM,1.988893,rapid_removal,3,Cycle 2

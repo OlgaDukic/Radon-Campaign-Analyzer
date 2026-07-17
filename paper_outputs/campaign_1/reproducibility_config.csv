@@ -1,0 +1,19 @@
+field,value
+campaign_id,1
+run_timestamp,2026-07-09T09:00:43.509478+00:00
+app_version_or_git_commit,6e41940
+timezone,Europe/Rome
+input_source_file_names,"[""AranetRn+ 2E81E_25DECEMBER2025_28FEB2026.xlsx"", ""AranetRn+ 2E81E_25MARCH2026_23JUNE2026.xlsx"", ""AranetRn+ 2E81E_25AUGUST2025_17NOVEMBER 2025.xlsx"", ""AranetRn+ 2E81E_25APRIL2025_22MAY2025.xlsx"", ""AranetRn+ 2E81E_8JAN2026_8APRIL2026.xlsx"", ""AranetRn+ 2E81E_22OTTOBRE2025_20GENNAIO2026.xlsx""]"
+canonicalisation_rules,"[""sort_by_utc_timestamp"", ""deduplicate_exact_timestamp_value_rows"", ""flag_duplicate_conflicts"", ""merge_environmental_completeness_when_radon_agrees""]"
+resampling_interval,1H
+gap_tolerance_multiplier,1.5
+completeness_threshold,0.75
+regime_thresholds,"{""low_radon_bq_m3"": 100.0, ""elevated_radon_bq_m3"": 200.0, ""high_radon_bq_m3"": 300.0, ""stable_change_bq_m3"": 20.0, ""rising_change_bq_m3"": 30.0, ""falling_change_bq_m3"": -30.0, ""sudden_change_bq_m3"": 100.0, ""minimum_segment_size"": 3, ""quality_limited_sample_count"": 3}"
+sensitivity_multipliers,"[0.8, 0.9, 1.0, 1.1, 1.2]"
+prediction_horizons,"[""1h"", ""6h""]"
+train_test_split_policy,chronological_train_test_split
+prediction_evaluation_description,chronological train/test split; training observations precede test observations in time
+included_quality_flags,all non-excluded flags retained for reporting
+excluded_prediction_quality_flags,"[""DUPLICATE_CONFLICT"", ""LOW_COMPLETENESS"", ""DST_AMBIGUOUS""]"
+raw_records,45977
+canonical_records,36797

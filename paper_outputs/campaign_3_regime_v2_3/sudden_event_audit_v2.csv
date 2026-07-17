@@ -1,0 +1,5 @@
+timestamp,segment_id,event_state,previous_radon,current_radon,observed_interval_hours,absolute_change,relative_change_percent,adjacent_slope_bq_m3_per_hour,short_slope_bq_m3_per_hour,threshold_used_bq_m3_per_hour,trigger_rule,threshold_satisfied
+2024-05-29T23:47:00+00:00,5,SUDDEN_DROP,228.0,46.0,1.0,-182.0,-79.825,-182.0,-55.333,75.0,adjacent_slope_exceeds_sudden_threshold,True
+2024-06-01T12:47:00+00:00,5,SUDDEN_DROP,N/A,11.0,0.033,N/A,N/A,-150.0,4.5,75.0,adjacent_slope_exceeds_sudden_threshold,True
+2024-06-13T22:44:00+00:00,6,SUDDEN_DROP,223.0,143.0,1.0,-80.0,-35.874,-80.0,-28.333,75.0,adjacent_slope_exceeds_sudden_threshold,True
+2024-06-13T23:44:00+00:00,6,SUDDEN_DROP,143.0,35.0,1.0,-108.0,-75.524,-108.0,-51.667,75.0,adjacent_slope_exceeds_sudden_threshold,True

@@ -1,0 +1,122 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-events1">
+
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            {% include "campaigns/_campaign_breadcrumb.html" %}
+            <p class="app-kicker">Documented Event Analysis</p>
+            <h2>{{ campaign.name }}</h2>
+            <p>Read-only analysis of documented closure, accumulation and ventilation windows for paper validation.</p>
+        </div>
+        <div class="actions">
+            <a class="button-tertiary" href="{% url 'campaigns:campaign_list' %}">All campaigns</a>
+            <a class="button-link" href="{% url 'campaigns:campaign_detail' campaign.pk %}">Back to overview</a>
+            <a class="button-secondary" href="{% url 'campaigns:documented_events_json' campaign.pk %}">JSON</a>
+            <a class="button-secondary" href="{% url 'campaigns:documented_events_csv' campaign.pk %}">CSV</a>
+            <a class="button-secondary" href="{% url 'campaigns:documented_events_excel' campaign.pk %}">Excel</a>
+        </div>
+    </header>
+
+    {% include "campaigns/_campaign_nav.html" %}
+
+    <section class="warning-item warning">
+        {{ payload.caution }} These timestamps are provisional stored timestamps and must not be presented as confirmed local-time window-opening times.
+    </section>
+
+    <section class="dashboard-panel">
+        <h3>Define One Temporary Cycle</h3>
+        <p class="section-subtitle">Optional read-only form. Submitting computes metrics for this request only and does not save an event database record.</p>
+        <form method="post" class="paper1-form">
+            {% csrf_token %}
+            <div class="form-grid">
+                <label>Cycle label <input name="cycle_label" value="{{ form_values.cycle_label }}"></label>
+                <label>Evidence status <input name="evidence_status" value="{{ form_values.evidence_status }}"></label>
+                <label>Baseline start <input name="baseline_start" value="{{ form_values.baseline_start }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label>Baseline end <input name="baseline_end" value="{{ form_values.baseline_end }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label>Accumulation start <input name="accumulation_start" value="{{ form_values.accumulation_start }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label>Accumulation end <input name="accumulation_end" value="{{ form_values.accumulation_end }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label>Rapid-removal start <input name="rapid_removal_start" value="{{ form_values.rapid_removal_start }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label>Rapid-removal end <input name="rapid_removal_end" value="{{ form_values.rapid_removal_end }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label>Post-event start <input name="post_event_start" value="{{ form_values.post_event_start }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label>Post-event end <input name="post_event_end" value="{{ form_values.post_event_end }}" placeholder="YYYY-MM-DD HH:MM"></label>
+                <label class="form-grid-wide">Short note <textarea name="note">{{ form_values.note }}</textarea></label>
+            </div>
+            <button class="button-primary" type="submit">Analyse temporary cycle</button>
+        </form>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Compact Cycle Comparison</h3>
+                <p class="section-subtitle">Metrics are computed from stored campaign measurements; existing reports and classifications are not modified.</p>
+            </div>
+        </div>
+        <div class="table-wrap">
+            <table class="dashboard-table diagnostic-table">
+                <thead>
+                    <tr>
+                        <th>Cycle</th><th>Evidence</th><th>Baseline mean</th><th>Baseline count</th>
+                        <th>Accumulation max</th><th>Max timestamp</th><th>Endpoint change</th>
+                        <th>Linear slope</th><th>Theil-Sen slope</th><th>Removal decrease</th>
+                        <th>% decrease</th><th>Time <=50</th><th>Time <=30</th><th>Post mean</th>
+                        <th>Missing obs.</th><th>Gaps</th><th>Quality affected</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cycle in payload.cycles %}
+                        <tr>
+                            <td>{{ cycle.definition.cycle_label }}</td>
+                            <td>{{ cycle.definition.evidence_status|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.baseline.mean|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.baseline.observation_count }}</td>
+                            <td>{{ cycle.metrics.accumulation.maximum_concentration|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.accumulation.maximum_timestamp|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.accumulation.endpoint_change|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.accumulation.ordinary_linear_slope|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.accumulation.theil_sen_slope|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.rapid_removal.absolute_decrease|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.rapid_removal.percentage_decrease|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.rapid_removal.time_to_first_lte_50_bq_m3_hours|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.rapid_removal.time_to_first_lte_30_bq_m3_hours|default:"N/A" }}</td>
+                            <td>{{ cycle.metrics.post_event.mean|default:"N/A" }}</td>
+                            <td>{{ cycle.missing_observations_total }}</td>
+                            <td>{{ cycle.gap_count_total }}</td>
+                            <td>{% if cycle.quality_affected %}Yes{% else %}No{% endif %}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="17">No documented cycles are defined for this campaign yet. Use the form above for a temporary read-only analysis.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% for cycle in payload.cycles %}
+        <section class="dashboard-panel">
+            <h3>{{ cycle.definition.cycle_label }} Plot</h3>
+            <p class="section-subtitle">Measured radon with phase backgrounds. Rapid removal is associated with a documented ventilation period; exact opening time may require timezone/event-log confirmation.</p>
+            {% if cycle.plot.points %}
+                <svg class="line-chart" viewBox="0 0 700 220" role="img" aria-label="{{ cycle.definition.cycle_label }} documented event plot">
+                    {% for band in cycle.plot.phase_bands %}
+                        <rect x="{{ band.x }}" y="28" width="{{ band.width }}" height="164" fill="{{ band.color }}" opacity="0.85"></rect>
+                    {% endfor %}
+                    <line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line>
+                    <line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line>
+                    <polyline points="{{ cycle.plot.points }}" fill="none" stroke="#2d6cdf" stroke-width="3"></polyline>
+                    {% if cycle.plot.markers.maximum %}<circle cx="{{ cycle.plot.markers.maximum.x }}" cy="{{ cycle.plot.markers.maximum.y }}" r="5" fill="#b7791f"><title>Maximum {{ cycle.plot.markers.maximum.value }} at {{ cycle.plot.markers.maximum.timestamp }}</title></circle>{% endif %}
+                    {% if cycle.plot.markers.rapid_removal_begin %}<circle cx="{{ cycle.plot.markers.rapid_removal_begin.x }}" cy="{{ cycle.plot.markers.rapid_removal_begin.y }}" r="5" fill="#0f766e"><title>Rapid-removal begin {{ cycle.plot.markers.rapid_removal_begin.value }} at {{ cycle.plot.markers.rapid_removal_begin.timestamp }}</title></circle>{% endif %}
+                    {% if cycle.plot.markers.minimum_after_removal %}<circle cx="{{ cycle.plot.markers.minimum_after_removal.x }}" cy="{{ cycle.plot.markers.minimum_after_removal.y }}" r="5" fill="#4c1d95"><title>Minimum after removal {{ cycle.plot.markers.minimum_after_removal.value }} at {{ cycle.plot.markers.minimum_after_removal.timestamp }}</title></circle>{% endif %}
+                </svg>
+                <p class="table-caption">Baseline, accumulation, rapid-removal and post-event phases are shown as coloured backgrounds.</p>
+            {% else %}
+                <p><span class="na-value">N/A</span></p>
+            {% endif %}
+        </section>
+    {% endfor %}
+</div>
+{% endblock %}

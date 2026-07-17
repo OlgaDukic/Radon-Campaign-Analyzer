@@ -1,0 +1,97 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-ux4">
+
+<div class="research-dashboard overview-page">
+    {% include "campaigns/_overview_header_actions.html" %}
+    {% include "campaigns/_campaign_nav.html" with active_section="overview" %}
+
+    <section class="overview-top">
+        {% include "campaigns/_overview_summary_cards.html" with cards=dashboard.cards %}
+    </section>
+
+    <section class="dashboard-panel chart-panel">
+        <div class="panel-title chart-panel-title">
+            <div>
+                <h3>Radon Time Series</h3>
+                <p class="section-subtitle">Lazy-loaded campaign trend with bounded chart payload. Use date filters to inspect a narrower interval.</p>
+            </div>
+            <form class="compact-filter-row chart-toolbar" id="overview-chart-filter">
+                <label>From <input type="datetime-local" name="date_from"></label>
+                <label>To <input type="datetime-local" name="date_to"></label>
+                <button class="button-secondary button-small" type="submit">Update chart</button>
+                <button class="button-tertiary button-small" type="reset">Reset</button>
+            </form>
+        </div>
+        {% if dashboard.time_series.has_data %}
+            <svg id="radon-time-series-chart" class="line-chart" viewBox="0 0 700 220" role="img" aria-label="Radon time series line chart">
+                <line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line>
+                <line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line>
+                <text x="350" y="112" text-anchor="middle" fill="#617182">Loading chart data...</text>
+            </svg>
+            <p id="radon-chart-caption" class="muted">Loading downsampled visualization. Statistics and analysis use the full dataset.</p>
+        {% else %}
+            <p><span class="na-value">N/A</span></p>
+        {% endif %}
+    </section>
+
+    <div class="overview-two-column">
+        {% include "campaigns/_overview_findings.html" %}
+        {% include "campaigns/_overview_warnings.html" %}
+    </div>
+
+    {% include "campaigns/_overview_important_episodes.html" %}
+    {% include "campaigns/_overview_navigation_cards.html" %}
+</div>
+
+{% if latest_report and dashboard.time_series.has_data %}
+<script>
+(function () {
+    const chart = document.getElementById("radon-time-series-chart");
+    const caption = document.getElementById("radon-chart-caption");
+    const filter = document.getElementById("overview-chart-filter");
+    const baseUrl = "{% url 'campaigns:campaign_chart_data' campaign.pk %}";
+
+    function drawChart(payload) {
+        const values = payload.points || [];
+        if (!values.length) {
+            chart.innerHTML = '<text x="350" y="112" text-anchor="middle" fill="#617182">N/A</text>';
+            caption.textContent = "No chart data for this interval.";
+            return;
+        }
+        const radonValues = values.map((point) => Number(point.radon_bq_m3));
+        const min = Math.min.apply(null, radonValues);
+        const max = Math.max.apply(null, radonValues);
+        const span = Math.max(max - min, 1);
+        const xStep = (700 - 56) / Math.max(values.length - 1, 1);
+        const points = radonValues.map((value, index) => {
+            const x = 28 + index * xStep;
+            const y = 192 - ((value - min) / span) * 164;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(" ");
+        chart.innerHTML = `<line x1="28" y1="192" x2="672" y2="192" stroke="#aab3bd"></line><line x1="28" y1="28" x2="28" y2="192" stroke="#aab3bd"></line><polyline points="${points}" fill="none" stroke="#2d6cdf" stroke-width="3"></polyline>`;
+        caption.textContent = `Displaying ${payload.returned_count.toLocaleString()} downsampled points from ${payload.source_count.toLocaleString()} measurements. Statistics and analysis use the full dataset.`;
+    }
+
+    function loadChart(params) {
+        const query = new URLSearchParams(params || {});
+        query.set("max_points", "2000");
+        fetch(`${baseUrl}?${query.toString()}`)
+            .then((response) => response.json())
+            .then(drawChart);
+    }
+
+    filter.addEventListener("submit", function (event) {
+        event.preventDefault();
+        loadChart(new FormData(filter));
+    });
+    filter.addEventListener("reset", function () {
+        window.setTimeout(function () { loadChart(); }, 0);
+    });
+    loadChart();
+}());
+</script>
+{% endif %}
+{% endblock %}

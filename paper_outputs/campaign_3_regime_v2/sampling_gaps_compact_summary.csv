@@ -1,0 +1,10 @@
+field,value
+total_sampling_irregularities,25
+minor_interval_deviations,0
+short_gaps,15
+moderate_gaps,5
+long_gaps,5
+inter_file_gaps,N/A
+dst_related_gaps,N/A
+prediction_breaking_gaps,25
+notes,Compact counts use the central time-continuity classification when available. Inter-file and DST-related gap attribution is not separately classified by the current prototype.

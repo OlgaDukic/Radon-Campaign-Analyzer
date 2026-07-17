@@ -1,0 +1,37 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-ux4">
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            <p class="app-kicker">Run New Analysis</p>
+            <h2>{{ campaign.name }}</h2>
+            <p>Run the exploratory Paper 1 workflow. Default settings are shown first; advanced settings are collapsed.</p>
+        </div>
+        <div class="actions"><a class="button-link" href="{% url 'campaigns:campaign_detail' campaign.pk %}">Back to Overview</a></div>
+    </header>
+    {% include "campaigns/_campaign_nav.html" %}
+    <section class="dashboard-panel compact-form-panel">
+        <h3>Default Analysis Settings</h3>
+        <form method="post" action="{% url 'campaigns:run_campaign_analysis' campaign.pk %}">
+            {% csrf_token %}
+            <div class="form-grid">
+                <label>Timezone {{ form.timezone }}</label>
+                <label>Resample interval {{ form.resample }}</label>
+                <label>Gap tolerance {{ form.gap_tolerance }}</label>
+            </div>
+            <details class="inline-details">
+                <summary>Advanced options</summary>
+                <div class="form-grid">
+                    <label class="checkbox-row">{{ form.rebuild_canonical }} Rebuild canonical dataset</label>
+                    <label class="checkbox-row">{{ form.run_sensitivity }} Run regime threshold sensitivity</label>
+                    <label class="checkbox-row">{{ form.export_excel }} Export Excel report</label>
+                </div>
+            </details>
+            <button class="button" type="submit">Run analysis</button>
+        </form>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+Count,Definition,Flag,Interpretation effect,Phases
+12,Regime or phase has few observations.,SMALL_PHASE_SAMPLE,Limits strength of parameter interpretation.,N/A
+5,Estimated transition parameter is close to a constraint.,PARAMETER_NEAR_BOUNDARY,Limits strength of parameter interpretation.,N/A
+6480,Documented event boundaries are provisional timestamps.,PROVISIONAL_EVENT_BOUNDARY,"Event timing should be interpreted as documented-window evidence, not confirmed opening time.",N/A
+126,Observed value differs strongly from the prior forecast.,LARGE_INNOVATION,Indicates possible model discrepancy during the affected phase.,N/A
+48,Innovations retain the same sign over a run.,SUSTAINED_SIGNED_INNOVATION,Indicates possible model discrepancy during the affected phase.,"accumulation, baseline, post_event"
+0,Predictive variance is high.,HIGH_PREDICTIVE_UNCERTAINTY,Prediction interval is wide; point estimate should be interpreted cautiously.,N/A
+120,Forecast target/origin is outside documented phase support.,OUTSIDE_TRAINING_REGIME,Use caution for affected rows.,N/A
+0,Recent timestamp gap affects continuity.,RECENT_GAP,Use caution for affected rows.,N/A

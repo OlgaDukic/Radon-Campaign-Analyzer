@@ -1,0 +1,111 @@
+{% extends "campaigns/base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'campaigns/dashboard.css' %}?v=20260716-context1">
+
+<div class="research-dashboard">
+    <header class="dashboard-hero">
+        <div>
+            {% include "campaigns/_campaign_breadcrumb.html" %}
+            <p class="app-kicker">Research Context</p>
+            <h2>{{ campaign.name }}</h2>
+            <p>Optional room, placement and source-context metadata for future physical interpretation. Blank means unknown.</p>
+        </div>
+        <div class="actions">
+            <a class="button-tertiary" href="{% url 'campaigns:campaign_list' %}">All campaigns</a>
+            <a class="button-link" href="{% url 'campaigns:campaign_detail' campaign.pk %}">Back to overview</a>
+            <a class="button-secondary" href="{% url 'campaigns:research_context_json' campaign.pk %}">Download JSON</a>
+        </div>
+    </header>
+
+    {% include "campaigns/_campaign_nav.html" %}
+
+    {% if volume_warning %}
+        <section class="warning-item warning">{{ volume_warning }}</section>
+    {% endif %}
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Model-Readiness Summary</h3>
+                <p class="section-subtitle">Missing context metadata does not block existing descriptive, regime or prediction analysis.</p>
+            </div>
+        </div>
+        <div class="summary-grid">
+            {% for key, value in research_context.readiness.items %}
+                <article class="summary-card">
+                    <span class="card-marker">R</span>
+                    <div>
+                        <span>{{ key }}</span>
+                        <strong>{% if value == True %}Yes{% elif value == False %}No{% else %}{{ value|default:"Not available" }}{% endif %}</strong>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="dashboard-panel">
+        <div class="panel-title">
+            <div>
+                <h3>Research Context Metadata</h3>
+                <p class="section-subtitle">All fields are optional. Unknown numeric values are stored as database NULL, not as text placeholders or zero.</p>
+            </div>
+        </div>
+        <form method="post" class="paper1-form research-context-form">
+            {% csrf_token %}
+            <details open class="inline-details">
+                <summary>Room and Building Context</summary>
+                <div class="form-grid context-form-grid">
+                    <label>Floor level {{ context_form.floor_level }}</label>
+                    <label>Height above ground (m) {{ context_form.height_above_ground_m }}</label>
+                    <label>Room volume (m³) {{ context_form.room_volume_m3 }}</label>
+                    <label>Volume source {{ context_form.room_volume_source }}</label>
+                    <label>Direct soil connection {{ context_form.direct_connection_to_soil }}</label>
+                    <label>Dominant material {{ context_form.dominant_material }}</label>
+                </div>
+            </details>
+
+            <details class="inline-details">
+                <summary>Sensor Placement and Events</summary>
+                <div class="form-grid context-form-grid">
+                    <label>Sensor height above floor (m) {{ context_form.sensor_height_m }}</label>
+                    <label>Distance from nearest opening (m) {{ context_form.distance_from_nearest_opening_m }}</label>
+                    <label>Sensor moved during campaign {{ context_form.sensor_moved_during_campaign }}</label>
+                    <label>Event-log availability {{ context_form.event_log_availability }}</label>
+                </div>
+            </details>
+
+            <details class="inline-details">
+                <summary>Notes and Evidence</summary>
+                <div class="form-grid context-form-grid">
+                    <label>Evidence status {{ context_form.evidence_status }}</label>
+                    <label class="form-grid-wide">Notes {{ context_form.notes }}</label>
+                </div>
+            </details>
+
+            {% if context_form.errors %}
+                <div class="warning-item warning">{{ context_form.errors }}</div>
+            {% endif %}
+            <div class="actions">
+                <button class="button-primary" type="submit">Save research context</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="dashboard-panel">
+        <h3>Current Values</h3>
+        <p class="section-subtitle">Values shown as Not available are stored as NULL or blank optional fields.</p>
+        <div class="table-wrap">
+            <table class="dashboard-table">
+                <thead><tr><th>Field</th><th>Value</th></tr></thead>
+                <tbody>
+                    {% for field, value in research_context.metadata.items %}
+                        <tr><td>{{ field }}</td><td>{% if value is None or value == "" %}<span class="na-value">Not available</span>{% else %}{{ value }}{% endif %}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

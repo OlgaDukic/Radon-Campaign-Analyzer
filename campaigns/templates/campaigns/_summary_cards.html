@@ -1,0 +1,13 @@
+<div class="summary-grid">
+    {% for card in cards %}
+        <div class="summary-card">
+            <div class="card-marker">{{ card.marker }}</div>
+            <div>
+                <span>{{ card.label }}</span>
+                <strong>{{ card.value|default:"N/A" }}</strong>
+            </div>
+        </div>
+    {% empty %}
+        <p><span class="na-value">N/A</span></p>
+    {% endfor %}
+</div>

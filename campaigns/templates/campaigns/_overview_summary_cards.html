@@ -1,0 +1,18 @@
+<div class="summary-grid overview-summary-grid">
+    {% for card in cards|slice:":8" %}
+        <article class="summary-card metric-card">
+            <div class="metric-icon" aria-hidden="true">{{ card.icon }}</div>
+            <div>
+                <span>{{ card.label }}</span>
+                <strong>{{ card.value|default:"N/A" }}</strong>
+                {% if card.badge %}<em class="status-badge status-{{ card.badge_class }}">{{ card.badge }}</em>{% endif %}
+                {% if card.support %}<small>{{ card.support }}</small>{% endif %}
+            </div>
+            {% if card.action_url %}
+                <a class="button-tertiary button-small card-action" href="{{ card.action_url }}">{{ card.action_label }}</a>
+            {% endif %}
+        </article>
+    {% empty %}
+        <p><span class="na-value">N/A</span></p>
+    {% endfor %}
+</div>

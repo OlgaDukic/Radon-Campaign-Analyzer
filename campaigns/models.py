@@ -65,6 +65,60 @@ class Measurement(models.Model):
         return f"{self.campaign} - {self.radon_bq_m3} Bq/m3"
 
 
+class NullableChoice(models.TextChoices):
+    YES = "YES", "Yes"
+    NO = "NO", "No"
+    UNKNOWN = "UNKNOWN", "Unknown"
+
+
+class EvidenceStatus(models.TextChoices):
+    UNKNOWN = "UNKNOWN", "Unknown"
+    ASSUMED = "ASSUMED", "Assumed"
+    ESTIMATED = "ESTIMATED", "Estimated"
+    PROVIDED = "PROVIDED", "Provided"
+    VERIFIED = "VERIFIED", "Verified"
+
+
+class RoomVolumeSource(models.TextChoices):
+    CALCULATED = "CALCULATED", "Calculated"
+    REPORTED = "REPORTED", "Reported"
+    ESTIMATED = "ESTIMATED", "Estimated"
+    USER_SELECTED = "USER_SELECTED", "User selected"
+    UNKNOWN = "UNKNOWN", "Unknown"
+
+
+class EventLogAvailability(models.TextChoices):
+    DOCUMENTED = "DOCUMENTED", "Documented"
+    PARTIAL = "PARTIAL", "Partial"
+    UNAVAILABLE = "UNAVAILABLE", "Unavailable"
+    NATURALISTIC_FREQUENT_INTERVENTIONS = "NATURALISTIC_FREQUENT_INTERVENTIONS", "Naturalistic frequent interventions"
+
+
+class CampaignResearchContext(models.Model):
+    campaign = models.OneToOneField(Campaign, on_delete=models.CASCADE, related_name="research_context")
+    floor_level = models.IntegerField(null=True, blank=True)
+    height_above_ground_m = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    direct_connection_to_soil = models.CharField(max_length=20, choices=NullableChoice.choices, blank=True)
+    room_volume_m3 = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    room_volume_source = models.CharField(max_length=30, choices=RoomVolumeSource.choices, blank=True)
+    dominant_material = models.CharField(max_length=160, blank=True)
+    sensor_height_m = models.DecimalField(max_digits=7, decimal_places=3, null=True, blank=True)
+    distance_from_nearest_opening_m = models.DecimalField(max_digits=7, decimal_places=3, null=True, blank=True)
+    sensor_moved_during_campaign = models.CharField(max_length=20, choices=NullableChoice.choices, blank=True)
+    event_log_availability = models.CharField(max_length=60, choices=EventLogAvailability.choices, blank=True)
+    notes = models.TextField(blank=True)
+    evidence_status = models.CharField(max_length=20, choices=EvidenceStatus.choices, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "campaign research context"
+        verbose_name_plural = "campaign research contexts"
+
+    def __str__(self):
+        return f"{self.campaign} research context"
+
+
 class AnalysisReport(models.Model):
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"

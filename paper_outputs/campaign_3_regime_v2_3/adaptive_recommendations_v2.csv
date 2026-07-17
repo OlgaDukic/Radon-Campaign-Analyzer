@@ -1,0 +1,4 @@
+parameter,active_threshold,recommended_threshold,source,override_accepted,note
+trend_slope_bq_m3_per_hour,8.0,7.333,90th percentile absolute short-window slope,False,Diagnostic recommendation only; active fixed-profile threshold was not changed silently.
+medium_trend_slope_bq_m3_per_hour,4.5,4.333,90th percentile absolute medium-window slope,False,Diagnostic recommendation only; active fixed-profile threshold was not changed silently.
+variability_threshold_bq_m3,15.0,13.0,95th percentile local MAD,False,Diagnostic recommendation only; active fixed-profile threshold was not changed silently.

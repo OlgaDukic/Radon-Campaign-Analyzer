@@ -1,0 +1,8 @@
+field,value
+total_sampling_irregularities,8356
+short_gaps,403
+long_gaps,3
+inter_file_gaps,N/A
+dst_related_gaps,N/A
+prediction_breaking_gaps,3
+notes,Sampling gaps are detected with the configured tolerance multiplier. Inter-file and DST-related gap attribution is not separately classified by the current prototype.

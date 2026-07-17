@@ -1,0 +1,32 @@
+section,key,value
+confidence_category_counts,HIGH,1036
+confidence_category_counts,LOW,45
+confidence_category_counts,MEDIUM,502
+confidence_distribution_by_dynamic_state,FALLING,"{""HIGH"": 32, ""LOW"": 2, ""MEDIUM"": 13}"
+confidence_distribution_by_dynamic_state,QUALITY_AFFECTED,"{""LOW"": 33, ""MEDIUM"": 3}"
+confidence_distribution_by_dynamic_state,RISING,"{""HIGH"": 39, ""LOW"": 1, ""MEDIUM"": 28}"
+confidence_distribution_by_dynamic_state,STABLE,"{""HIGH"": 866, ""LOW"": 9, ""MEDIUM"": 457}"
+confidence_distribution_by_dynamic_state,SUDDEN_DROP,"{""HIGH"": 3, ""MEDIUM"": 1}"
+confidence_distribution_by_dynamic_state,UNSTABLE_TRANSITION,"{""HIGH"": 96}"
+confidence_distribution_by_episode_type,ACCUMULATION,"{""HIGH"": 11, ""MEDIUM"": 1}"
+confidence_distribution_by_episode_type,DECLINE,"{""HIGH"": 7, ""MEDIUM"": 1}"
+confidence_distribution_by_episode_type,QUALITY_AFFECTED,"{""LOW"": 26}"
+confidence_distribution_by_episode_type,STABLE_ELEVATED,"{""HIGH"": 4, ""MEDIUM"": 3}"
+confidence_distribution_by_episode_type,STABLE_HIGH,"{""HIGH"": 7, ""MEDIUM"": 1}"
+confidence_distribution_by_episode_type,STABLE_LOW,"{""HIGH"": 35, ""LOW"": 2, ""MEDIUM"": 1}"
+confidence_distribution_by_episode_type,SUDDEN_DROP_EVENT,"{""HIGH"": 2, ""MEDIUM"": 1}"
+confidence_distribution_by_episode_type,UNSTABLE_TRANSITION,"{""HIGH"": 33, ""LOW"": 1, ""MEDIUM"": 13}"
+reason_code_counts,EXPLICIT_INSTABILITY_EVIDENCE,59
+reason_code_counts,HIGH_LOCAL_VARIABILITY,12
+reason_code_counts,INSUFFICIENT_WINDOW,51
+reason_code_counts,LONG_STABLE_DURATION,1258
+reason_code_counts,LOW_LOCAL_VARIABILITY,1531
+reason_code_counts,NEAR_GAP,51
+reason_code_counts,PERSISTENCE_ADJUSTED_STATE,194
+reason_code_counts,RAW_SMOOTHED_DISAGREEMENT,115
+reason_code_counts,SHORT_MEDIUM_SLOPE_AGREEMENT,981
+reason_code_counts,SLOPE_NEAR_THRESHOLD,56
+reason_code_counts,STRONG_PERSISTENT_TREND,26
+reason_code_counts,SUFFICIENT_WINDOW,1532
+low_confidence_row_count,rows,45
+low_confidence_episode_count,episodes,29
